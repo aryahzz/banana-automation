@@ -1,0 +1,7 @@
+{
+  "version": "1.3.4",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- رفع نمایش شناسه خام فیلدها در صفحه پذیرش و نمایش مقدار واقعی\n- اطمینان از صحت تشخیص اساین‌ شدن کاربران حتی با فرمت‌های ذخیره متفاوت\n- به‌روزرسانی نسخه و فید آپدیت برای دریافت از GitHub"
+}

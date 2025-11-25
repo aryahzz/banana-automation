@@ -130,13 +130,27 @@ class Benana_Automation_Project_Handler {
     }
 
     public static function user_is_assignee( $project_id, $user_id ) {
-        $assigned = json_decode( get_post_meta( $project_id, 'assigned_users', true ), true );
+        $raw_assigned = get_post_meta( $project_id, 'assigned_users', true );
+        $assigned     = json_decode( $raw_assigned, true );
+
+        if ( ! is_array( $assigned ) ) {
+            $maybe = maybe_unserialize( $raw_assigned );
+            if ( is_array( $maybe ) ) {
+                $assigned = $maybe;
+            }
+        }
+
+        if ( ! is_array( $assigned ) && ! empty( $raw_assigned ) ) {
+            $assigned = array_map( 'intval', array_filter( array_map( 'trim', explode( ',', (string) $raw_assigned ) ) ) );
+        }
+
         if ( ! is_array( $assigned ) ) {
             $assigned = array();
         }
 
+        $assigned   = array_map( 'intval', $assigned );
         $accepted_by = get_post_meta( $project_id, 'accepted_by', true );
-        return ( in_array( $user_id, $assigned, true ) || intval( $accepted_by ) === intval( $user_id ) );
+        return ( in_array( intval( $user_id ), $assigned, true ) || intval( $accepted_by ) === intval( $user_id ) );
     }
 
     public static function build_context( $project_id, $user_id, $entry ) {

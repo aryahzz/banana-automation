@@ -187,12 +187,32 @@ class Benana_Automation_Shortcodes {
 
     private function resolve_field_value( $token, $entry, $form ) {
         $clean = trim( $token, '{}' );
-        if ( class_exists( 'GFCommon' ) && ! empty( $form ) ) {
-            $merge_tag = '{' . $clean . '}';
-            return GFCommon::replace_variables( $merge_tag, $form, $entry, false, false, false, 'html' );
+
+        // Direct entry value first (supports 1.3 style sub-inputs).
+        if ( isset( $entry[ $clean ] ) ) {
+            return $entry[ $clean ];
         }
 
-        return isset( $entry[ $clean ] ) ? $entry[ $clean ] : '';
+        if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+            $field = GFFormsModel::get_field( $form, $clean );
+            if ( $field ) {
+                $raw = rgar( $entry, $clean );
+                $val = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
+                if ( '' !== trim( wp_strip_all_tags( (string) $val ) ) ) {
+                    return $val;
+                }
+            }
+        }
+
+        if ( class_exists( 'GFCommon' ) && ! empty( $form ) ) {
+            $merge_tag = '{' . $clean . '}';
+            $val       = GFCommon::replace_variables( $merge_tag, $form, $entry, false, false, false, 'html' );
+            if ( $val !== $merge_tag ) {
+                return $val;
+            }
+        }
+
+        return '';
     }
 
     private function resolve_field_label( $token, $form ) {

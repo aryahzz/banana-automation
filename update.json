@@ -1,7 +1,7 @@
 {
-    "version": "1.3.2",
+  "version": "1.3.3",
     "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
     "requires": "6.0",
     "tested": "6.5",
-    "changelog": "- رفع خطای str_replace هنگام جایگزینی مرج‌تگ‌های پیامک و سازگاری ایمن با مقادیر چندگانه\n- به‌روزرسانی نسخه و فید آپدیت برای دریافت از GitHub"
+  "changelog": "- سازگاری با تابع wp_sms_send و جلوگیری از خطای متد ناشناخته در WP-SMS\n- به‌روزرسانی نسخه و فید آپدیت برای دریافت از GitHub"
 }

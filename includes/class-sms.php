@@ -1,16 +1,49 @@
 <?php
 class Benana_Automation_SMS {
     public function send_sms( $mobile, $message ) {
-        if ( empty( $mobile ) || empty( $message ) ) {
+        $message = (string) ( $message ?? '' );
+        $numbers = array();
+
+        foreach ( (array) $mobile as $single ) {
+            $single = trim( (string) $single );
+            if ( '' !== $single ) {
+                $numbers[] = $single;
+            }
+        }
+
+        if ( empty( $numbers ) || '' === $message ) {
             return false;
+        }
+
+        if ( function_exists( 'wp_sms_send' ) ) {
+            $result = wp_sms_send( $numbers, $message );
+            if ( is_wp_error( $result ) ) {
+                return false;
+            }
+
+            return (bool) $result;
         }
 
         if ( class_exists( 'WP_SMS' ) ) {
             $sms = new WP_SMS();
-            $sms->to = array( $mobile );
-            $sms->msg = $message;
-            $sms->SendSMS();
-            return true;
+            if ( property_exists( $sms, 'to' ) ) {
+                $sms->to = $numbers;
+            }
+            if ( property_exists( $sms, 'msg' ) ) {
+                $sms->msg = $message;
+            }
+
+            if ( method_exists( $sms, 'send_sms' ) ) {
+                return (bool) $sms->send_sms();
+            }
+
+            if ( method_exists( $sms, 'send' ) ) {
+                return (bool) $sms->send();
+            }
+
+            if ( method_exists( $sms, 'SendSMS' ) ) {
+                return (bool) $sms->SendSMS();
+            }
         }
 
         return false;

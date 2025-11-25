@@ -1,22 +1,34 @@
 jQuery(document).ready(function($){
-    $('#benana-add-gf').on('click', function(){
-        var lastRow = $('#benana-gf-table tbody tr:last');
-        var clone = lastRow.clone();
-        var newKey = 'row_' + Date.now();
+    var $table    = $('#benana-gf-table');
+    var $template = $table.find('.benana-gf-template');
 
-        clone.attr('data-row-key', newKey);
-        clone.find('input').each(function(){
+    function addRow() {
+        var newKey = 'row_' + Date.now();
+        var $clone = $template.clone();
+
+        $clone.removeClass('benana-gf-template').attr('style', '').attr('data-row-key', newKey);
+        $clone.find('input').prop('disabled', false).each(function(){
             var name = $(this).attr('name');
             name = name.replace(/\[gravity_forms\]\[[^\]]+\]/, '[gravity_forms][' + newKey + ']');
             $(this).attr('name', name).val('');
         });
+        $clone.find('.benana-remove-gf').prop('disabled', false);
 
-        $('#benana-gf-table tbody').append(clone);
+        $table.find('tbody').append($clone);
+    }
+
+    if ( $table.find('tbody tr').length === 1 ) {
+        addRow();
+    }
+
+    $('#benana-add-gf').on('click', function(){
+        addRow();
     });
 
-    $('#benana-gf-table').on('click', '.benana-remove-gf', function(){
-        var rows = $('#benana-gf-table tbody tr');
-        if ( rows.length > 1 ) {
+    $table.on('click', '.benana-remove-gf', function(){
+        var $rows = $table.find('tbody tr').not('.benana-gf-template');
+
+        if ( $rows.length > 1 ) {
             $(this).closest('tr').remove();
         } else {
             $(this).closest('tr').find('input').val('');

@@ -60,7 +60,7 @@ class Benana_Automation_Settings {
                             $this->render_gf_row( 'row_' . $row_index, $form_id, $form_settings );
                             $row_index++;
                         }
-                        $this->render_gf_row( 'row_new', '', array() );
+                        $this->render_gf_row( 'row_template', '', array(), true );
                         ?>
                     </tbody>
                 </table>
@@ -86,7 +86,7 @@ class Benana_Automation_Settings {
         <?php
     }
 
-    private function render_gf_row( $row_key, $form_id, $form_settings ) {
+    private function render_gf_row( $row_key, $form_id, $form_settings, $is_template = false ) {
         $defaults = array(
             'city_field'    => '',
             'mobile_field'  => '',
@@ -95,15 +95,18 @@ class Benana_Automation_Settings {
             'after_accept'  => '',
         );
         $form_settings = wp_parse_args( $form_settings, $defaults );
+        $row_classes   = $is_template ? 'benana-gf-row benana-gf-template' : 'benana-gf-row';
+        $disabled_attr = $is_template ? 'disabled="disabled"' : '';
+        $style         = $is_template ? 'style="display:none;"' : '';
         ?>
-        <tr class="benana-gf-row" data-row-key="<?php echo esc_attr( $row_key ); ?>">
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][form_id]" value="<?php echo esc_attr( $form_id ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][city_field]" value="<?php echo esc_attr( $form_settings['city_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" placeholder="مثال: 3,4 یا {input_5}" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][after_accept]" value="<?php echo esc_attr( $form_settings['after_accept'] ); ?>" placeholder="مثال: 6,7 یا {Field:8}" /></td>
-            <td><button type="button" class="button benana-remove-gf">حذف</button></td>
+        <tr class="<?php echo esc_attr( $row_classes ); ?>" data-row-key="<?php echo esc_attr( $row_key ); ?>" <?php echo $style; ?>>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][form_id]" value="<?php echo esc_attr( $form_id ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][city_field]" value="<?php echo esc_attr( $form_settings['city_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" placeholder="مثال: 3,4 یا {input_5}" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][after_accept]" value="<?php echo esc_attr( $form_settings['after_accept'] ); ?>" placeholder="مثال: 6,7 یا {Field:8}" /></td>
+            <td><button type="button" class="button benana-remove-gf" <?php echo $is_template ? 'disabled="disabled"' : ''; ?>>حذف</button></td>
         </tr>
         <?php
     }

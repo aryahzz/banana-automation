@@ -1,4 +1,6 @@
 jQuery(document).ready(function($){
+    var address = window.benanaAddress || {provinces:{},cities:{}};
+
     var $table    = $('#benana-gf-table');
     var $template = $table.find('.benana-gf-template');
 
@@ -32,6 +34,49 @@ jQuery(document).ready(function($){
             $(this).closest('tr').remove();
         } else {
             $(this).closest('tr').find('input').val('');
+        }
+    });
+
+    function renderCities($wrapper) {
+        var province = $('#user_province_id, .benana-availability-form select[name="user_province_id"]').val();
+        var selected = ($wrapper.data('selected') || '').toString().split(',');
+        var list     = address.cities[province] || {};
+        var $grid    = $wrapper.find('.benana-city-grid');
+        $grid.empty();
+
+        $.each(list, function(id, name){
+            var isChecked = selected.indexOf(id) !== -1;
+            var inputName = $wrapper.data('field') + '[]';
+            var item = $('<label class="benana-city-item"></label>');
+            var checkbox = $('<input type="checkbox" />').attr('name', inputName).attr('value', id);
+            if (isChecked) {
+                checkbox.prop('checked', true);
+            }
+            item.append(checkbox).append($('<span></span>').text(name));
+            $grid.append(item);
+        });
+    }
+
+    function initCitySelectors() {
+        $('.benana-city-select').each(function(){
+            renderCities($(this));
+        });
+    }
+
+    $('#user_province_id, .benana-availability-form select[name="user_province_id"]').on('change', function(){
+        $(this).closest('td, .benana-availability-form').find('.benana-city-select').each(function(){
+            $(this).data('selected', '');
+            renderCities($(this));
+        });
+    });
+
+    initCitySelectors();
+
+    $('input[name="user_is_active"]').on('change', function(){
+        if ( $(this).val() === '0' ) {
+            $('.benana-inactive-options').slideDown();
+        } else {
+            $('.benana-inactive-options').slideUp();
         }
     });
 });

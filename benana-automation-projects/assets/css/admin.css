@@ -14,3 +14,38 @@
 .benana-admin select {
     width: 100%;
 }
+
+.benana-user-profile .benana-city-grid,
+.benana-availability-form .benana-city-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.benana-city-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.benana-availability .benana-radio {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.benana-inactive-options {
+    margin-top: 8px;
+}
+
+.benana-inactive-options select,
+.benana-inactive-options input {
+    max-width: 240px;
+}

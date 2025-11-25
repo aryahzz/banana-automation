@@ -17,7 +17,25 @@ class Benana_Automation_Project_Handler {
             ),
         );
         $users = get_users( $args );
-        return wp_list_pluck( $users, 'ID' );
+
+        $filtered = array();
+        foreach ( $users as $user ) {
+            $inactive_until = get_user_meta( $user->ID, 'user_inactive_until', true );
+            if ( '' === $inactive_until || empty( $inactive_until ) ) {
+                $filtered[] = $user->ID;
+                continue;
+            }
+
+            if ( intval( $inactive_until ) === -1 ) {
+                continue;
+            }
+
+            if ( intval( $inactive_until ) < time() ) {
+                $filtered[] = $user->ID;
+            }
+        }
+
+        return $filtered;
     }
 
     public static function send_assignment_sms( $project_id, $user_id, $entry ) {

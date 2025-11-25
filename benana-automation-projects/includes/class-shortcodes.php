@@ -4,6 +4,7 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_inbox', array( $this, 'inbox_shortcode' ) );
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
+        add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_action( 'init', array( $this, 'handle_actions' ) );
     }
 
@@ -29,8 +30,11 @@ class Benana_Automation_Shortcodes {
             return '<p>برای مشاهده پروژه‌ها وارد شوید.</p>';
         }
         $user_id  = get_current_user_id();
+        $search   = sanitize_text_field( wp_unslash( $_GET['benana_search'] ?? '' ) );
+        $status   = sanitize_text_field( wp_unslash( $_GET['benana_status'] ?? '' ) );
         $args     = array(
             'post_type'  => 'project',
+            's'          => $search,
             'meta_query' => array(
                 'relation' => 'OR',
                 array(
@@ -44,6 +48,13 @@ class Benana_Automation_Shortcodes {
                 ),
             ),
         );
+
+        if ( ! empty( $status ) ) {
+            $args['meta_query'][] = array(
+                'key'   => 'project_status',
+                'value' => $status,
+            );
+        }
         $projects = get_posts( $args );
         ob_start();
         include BENANA_AUTOMATION_PATH . 'templates/inbox.php';
@@ -55,8 +66,10 @@ class Benana_Automation_Shortcodes {
             return '<p>برای مشاهده تاریخچه وارد شوید.</p>';
         }
         $user_id = get_current_user_id();
+        $search  = sanitize_text_field( wp_unslash( $_GET['benana_history_search'] ?? '' ) );
         $args    = array(
             'post_type'  => 'project',
+            's'          => $search,
             'meta_query' => array(
                 array(
                     'key'   => 'client_user_id',
@@ -92,5 +105,131 @@ class Benana_Automation_Shortcodes {
             $count = $query->found_posts;
         }
         return '<div class="benana-stats">پروژه‌های تکمیل‌شده: ' . intval( $count ) . '</div>';
+    }
+
+    public function availability_shortcode() {
+        if ( ! is_user_logged_in() ) {
+            return '<p>برای مدیریت وضعیت خود ابتدا وارد شوید.</p>';
+        }
+
+        $user_id = get_current_user_id();
+        $message = '';
+
+        if ( isset( $_POST['benana_availability_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['benana_availability_nonce'] ) ), 'benana_availability' ) ) {
+            $province_id    = sanitize_text_field( wp_unslash( $_POST['user_province_id'] ?? '' ) );
+            $city_ids       = array_filter( array_map( 'sanitize_text_field', wp_unslash( $_POST['user_city_ids'] ?? array() ) ) );
+            $is_active      = isset( $_POST['user_is_active'] ) ? sanitize_text_field( wp_unslash( $_POST['user_is_active'] ) ) : '1';
+            $duration       = sanitize_text_field( wp_unslash( $_POST['user_inactive_duration'] ?? '' ) );
+            $inactive_until = '';
+
+            if ( '0' === $is_active ) {
+                switch ( $duration ) {
+                    case '8h':
+                        $inactive_until = time() + HOUR_IN_SECONDS * 8;
+                        break;
+                    case '12h':
+                        $inactive_until = time() + HOUR_IN_SECONDS * 12;
+                        break;
+                    case '2d':
+                        $inactive_until = time() + DAY_IN_SECONDS * 2;
+                        break;
+                    case '1w':
+                        $inactive_until = time() + WEEK_IN_SECONDS;
+                        break;
+                    case 'manual':
+                        $inactive_until = -1;
+                        break;
+                    case 'custom':
+                        $custom = sanitize_text_field( wp_unslash( $_POST['user_inactive_until'] ?? '' ) );
+                        $time   = strtotime( $custom );
+                        if ( $time ) {
+                            $inactive_until = $time;
+                        }
+                        break;
+                }
+            }
+
+            update_user_meta( $user_id, 'user_province_id', $province_id );
+            update_user_meta( $user_id, 'user_city_ids', $city_ids );
+            update_user_meta( $user_id, 'user_is_active', $is_active === '0' ? '0' : '1' );
+            update_user_meta( $user_id, 'user_inactive_until', $inactive_until );
+
+            $message = '<div class="benana-alert success">اطلاعات با موفقیت ذخیره شد.</div>';
+        }
+
+        $province_id     = get_user_meta( $user_id, 'user_province_id', true );
+        $city_ids        = (array) get_user_meta( $user_id, 'user_city_ids', true );
+        $is_active       = get_user_meta( $user_id, 'user_is_active', true );
+        $inactive_until  = get_user_meta( $user_id, 'user_inactive_until', true );
+        $inactive_output = '';
+
+        if ( is_numeric( $inactive_until ) && intval( $inactive_until ) > 0 ) {
+            $inactive_output = gmdate( 'Y-m-d\TH:i', intval( $inactive_until ) );
+        }
+
+        if ( '' === $is_active ) {
+            $is_active = '1';
+        }
+
+        $provinces = Benana_Automation_Address::get_provinces();
+        $cities    = Benana_Automation_Address::get_cities();
+
+        ob_start();
+        ?>
+        <div class="benana-availability-form">
+            <?php echo $message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <form method="post">
+                <?php wp_nonce_field( 'benana_availability', 'benana_availability_nonce' ); ?>
+                <div class="field">
+                    <label for="benana-province">استان</label>
+                    <select id="benana-province" name="user_province_id">
+                        <option value="">انتخاب استان</option>
+                        <?php foreach ( $provinces as $pid => $pname ) : ?>
+                            <option value="<?php echo esc_attr( $pid ); ?>" <?php selected( $province_id, $pid ); ?>><?php echo esc_html( $pname ); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>شهرها</label>
+                    <div class="benana-city-select" data-field="user_city_ids" data-selected="<?php echo esc_attr( implode( ',', $city_ids ) ); ?>">
+                        <div class="benana-city-grid">
+                            <?php
+                            if ( $province_id && isset( $cities[ $province_id ] ) ) {
+                                foreach ( $cities[ $province_id ] as $cid => $cname ) {
+                                    ?>
+                                    <label class="benana-city-item">
+                                        <input type="checkbox" name="user_city_ids[]" value="<?php echo esc_attr( $cid ); ?>" <?php checked( in_array( $cid, $city_ids, true ), true ); ?> />
+                                        <span><?php echo esc_html( $cname ); ?></span>
+                                    </label>
+                                    <?php
+                                }
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    <p class="description">شهرهای پوشش داده شده خود را مشخص کنید.</p>
+                </div>
+                <div class="field benana-availability">
+                    <label>وضعیت فعالیت</label>
+                    <label class="benana-radio"><input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال</label>
+                    <label class="benana-radio"><input type="radio" name="user_is_active" value="0" <?php checked( $is_active, '0' ); ?> /> غیرفعال موقت</label>
+                    <div class="benana-inactive-options" <?php echo ( '0' === $is_active ) ? '' : 'style="display:none"'; ?>>
+                        <select name="user_inactive_duration">
+                            <option value="">انتخاب بازه</option>
+                            <option value="8h">۸ ساعته</option>
+                            <option value="12h">۱۲ ساعته</option>
+                            <option value="2d">دو روزه</option>
+                            <option value="1w">یک هفته‌ای</option>
+                            <option value="manual">تا اطلاع ثانوی</option>
+                            <option value="custom">تاریخ و ساعت دلخواه</option>
+                        </select>
+                        <input type="datetime-local" name="user_inactive_until" value="<?php echo esc_attr( $inactive_output ); ?>" />
+                    </div>
+                </div>
+                <button type="submit" class="button button-primary">ثبت تغییرات</button>
+            </form>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 }

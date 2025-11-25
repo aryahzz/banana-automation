@@ -17,6 +17,7 @@ class Benana_Automation_Settings {
                 'file_uploaded'      => 'فایل پروژه {project_title} بارگذاری شد: {file_url}',
                 'completed'          => 'پروژه {project_title} به پایان رسید. سپاسگزاریم.',
             ),
+            'update_source' => '',
         );
         $settings = get_option( self::OPTION_KEY, array() );
         return wp_parse_args( $settings, $defaults );
@@ -80,6 +81,17 @@ class Benana_Automation_Settings {
                     echo '<textarea id="sms_' . esc_attr( $key ) . '" name="' . self::OPTION_KEY . '[sms_templates][' . esc_attr( $key ) . ']" class="large-text" rows="3">' . esc_textarea( $settings['sms_templates'][ $key ] ) . '</textarea></p>';
                 }
                 ?>
+
+                <h2>بروزرسانی افزونه</h2>
+                <p>آدرس JSON به‌روزرسانی را وارد کنید تا افزونه مستقیماً از همان منبع به‌روزرسانی شود. ساختار پیشنهادی:</p>
+                <pre>{
+    "version": "1.1.0",
+    "download_url": "https://example.com/benana-automation-projects.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+    "changelog": "- تغییرات نسخه جدید"
+}</pre>
+                <p><input type="url" class="regular-text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[update_source]" value="<?php echo esc_attr( $settings['update_source'] ); ?>" placeholder="https://example.com/update.json" /></p>
                 <?php submit_button( 'ذخیره تنظیمات' ); ?>
             </form>
         </div>
@@ -136,6 +148,8 @@ class Benana_Automation_Settings {
                 );
             }
         }
+
+        $clean['update_source'] = isset( $input['update_source'] ) ? esc_url_raw( $input['update_source'] ) : '';
 
         return $clean;
     }

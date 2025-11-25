@@ -1,0 +1,7 @@
+{
+    "version": "1.2.7",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+    "changelog": "- دیباگ اساین با لاگ اختصاصی و نرمال‌سازی متای شهر کاربران\n- حذف بخش نمایشی آپدیت و افزودن دکمه بررسی دستی\n- رفع مشکلات تشخیص شهر/استان در اساین پروژه و ارتقای نسخه به 1.2.7"
+}

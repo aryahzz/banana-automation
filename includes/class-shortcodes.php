@@ -467,40 +467,12 @@ class Benana_Automation_Shortcodes {
         if ( isset( $_POST['benana_availability_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['benana_availability_nonce'] ) ), 'benana_availability' ) ) {
             $province_id    = sanitize_text_field( wp_unslash( $_POST['user_province_id'] ?? '' ) );
             $city_ids       = array_filter( array_map( 'sanitize_text_field', wp_unslash( $_POST['user_city_ids'] ?? array() ) ) );
-            $is_active      = isset( $_POST['user_is_active'] ) ? sanitize_text_field( wp_unslash( $_POST['user_is_active'] ) ) : '1';
-            $duration       = sanitize_text_field( wp_unslash( $_POST['user_inactive_duration'] ?? '' ) );
-            $inactive_until = '';
-
-            if ( '0' === $is_active ) {
-                switch ( $duration ) {
-                    case '8h':
-                        $inactive_until = time() + HOUR_IN_SECONDS * 8;
-                        break;
-                    case '12h':
-                        $inactive_until = time() + HOUR_IN_SECONDS * 12;
-                        break;
-                    case '2d':
-                        $inactive_until = time() + DAY_IN_SECONDS * 2;
-                        break;
-                    case '1w':
-            $inactive_until = time() + WEEK_IN_SECONDS;
-                    break;
-                case 'manual':
-                    $inactive_until = -1;
-                    break;
-                case 'custom':
-                    $custom = sanitize_text_field( wp_unslash( $_POST['user_inactive_until'] ?? '' ) );
-                    $parsed = Benana_Automation_Date_Helper::parse_inactive_input( $custom );
-                    if ( '' !== $parsed ) {
-                        $inactive_until = $parsed;
-                    }
-                    break;
-            }
-        }
+            $is_active      = isset( $_POST['user_is_active'] ) ? sanitize_text_field( wp_unslash( $_POST['user_is_active'] ) ) : '0';
+            $inactive_until = ( '1' === $is_active ) ? '' : -1;
 
             update_user_meta( $user_id, 'user_province_id', $province_id );
             update_user_meta( $user_id, 'user_city_ids', $city_ids );
-            update_user_meta( $user_id, 'user_is_active', $is_active === '0' ? '0' : '1' );
+            update_user_meta( $user_id, 'user_is_active', $is_active === '1' ? '1' : '0' );
             update_user_meta( $user_id, 'user_inactive_until', $inactive_until );
 
             $message = '<div class="benana-alert success">اطلاعات با موفقیت ذخیره شد.</div>';
@@ -510,7 +482,6 @@ class Benana_Automation_Shortcodes {
         $city_ids        = (array) get_user_meta( $user_id, 'user_city_ids', true );
         $is_active       = get_user_meta( $user_id, 'user_is_active', true );
         $inactive_until  = get_user_meta( $user_id, 'user_inactive_until', true );
-        $inactive_output = Benana_Automation_Date_Helper::format_for_picker( $inactive_until );
 
         if ( '' === $is_active ) {
             $is_active = '1';
@@ -552,25 +523,14 @@ class Benana_Automation_Shortcodes {
                             ?>
                         </div>
                     </div>
-                    <p class="description">شهرهای پوشش داده شده خود را مشخص کنید.</p>
                 </div>
                 <div class="field benana-availability">
                     <label>وضعیت فعالیت</label>
-                    <label class="benana-radio"><input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال</label>
-                    <label class="benana-radio"><input type="radio" name="user_is_active" value="0" <?php checked( $is_active, '0' ); ?> /> غیرفعال موقت</label>
-                    <div class="benana-inactive-options" <?php echo ( '0' === $is_active ) ? '' : 'style="display:none"'; ?>>
-                        <select name="user_inactive_duration">
-                            <option value="">انتخاب بازه</option>
-                            <option value="8h">۸ ساعته</option>
-                            <option value="12h">۱۲ ساعته</option>
-                            <option value="2d">دو روزه</option>
-                            <option value="1w">یک هفته‌ای</option>
-                            <option value="manual">تا اطلاع ثانوی</option>
-                            <option value="custom">تاریخ و ساعت دلخواه</option>
-                        </select>
-                        <input type="text" name="user_inactive_until" class="benana-jdp-input" data-jdp data-jdp-only-date="false" value="<?php echo esc_attr( $inactive_output ); ?>" placeholder="مثال: 1402/07/15 14:30" autocomplete="off" />
-                        <p class="description">از تقویم شمسی برای تعیین تاریخ دلخواه استفاده کنید؛ زمان ذخیره‌شده به میلادی محاسبه می‌شود.</p>
-                    </div>
+                    <label class="benana-toggle">
+                        <input type="hidden" name="user_is_active" value="0" />
+                        <input type="checkbox" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> />
+                        <span>فعال هستم</span>
+                    </label>
                 </div>
                 <button type="submit" class="button button-primary">ثبت تغییرات</button>
             </form>

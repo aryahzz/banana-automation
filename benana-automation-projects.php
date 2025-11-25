@@ -3,7 +3,7 @@
 Plugin Name: بنانا اتوماسیون پروژه‌ها
 Plugin URI: https://github.com/aryahzz/banana-automation
 Description: سیستم اتوماسیون مدیریت پروژه با Gravity Forms و WP-SMS.
-Version: 1.3.11
+Version: 1.3.13
 Requires at least: 6.0
 Requires PHP: 7.4
 Author: Banana Automation
@@ -18,9 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.3.11' );
-
-require_once BENANA_AUTOMATION_PATH . 'includes/class-date-helper.php';
+define( 'BENANA_AUTOMATION_VERSION', '1.3.13' );
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';
@@ -93,36 +91,94 @@ class Benana_Automation_Projects {
         new Benana_Automation_Updater();
     }
 
+    private function content_has_shortcodes( $content ) {
+        $shortcodes = array( 'project_inbox', 'project_user_history', 'project_user_stats', 'benana_user_availability', 'project_detail' );
+
+        foreach ( $shortcodes as $shortcode ) {
+            if ( has_shortcode( $content, $shortcode ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function front_needs_assets() {
+        if ( is_admin() ) {
+            return false;
+        }
+
+        if ( is_page( 'projects' ) ) {
+            return true;
+        }
+
+        if ( is_singular() ) {
+            $post = get_post();
+            if ( $post && $this->content_has_shortcodes( $post->post_content ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function enqueue_front_assets() {
-        wp_enqueue_style( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.css', array(), BENANA_AUTOMATION_VERSION );
-        wp_enqueue_style( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/css/frontend.css', array( 'benana-jdp' ), '1.0.0' );
+        static $enqueued = false;
+
+        if ( $enqueued || ! $this->front_needs_assets() ) {
+            return;
+        }
+
+        $enqueued = true;
+
+        wp_enqueue_style( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/css/frontend.css', array(), '1.0.0' );
         wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-front' ), '1.0.0' );
-        wp_enqueue_script( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.js', array(), BENANA_AUTOMATION_VERSION, true );
-        wp_enqueue_script( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/js/frontend.js', array( 'jquery', 'benana-jdp' ), '1.0.0', true );
-        wp_localize_script(
-            'benana-automation-front',
-            'benanaAddress',
-            array(
-                'provinces' => Benana_Automation_Address::get_provinces(),
-                'cities'    => Benana_Automation_Address::get_cities(),
-            )
-        );
+        wp_enqueue_script( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/js/frontend.js', array( 'jquery' ), '1.0.0', true );
+
+        $post            = get_post();
+        $needs_addresses = $post && has_shortcode( $post->post_content ?? '', 'benana_user_availability' );
+
+        if ( $needs_addresses ) {
+            wp_localize_script(
+                'benana-automation-front',
+                'benanaAddress',
+                array(
+                    'provinces' => Benana_Automation_Address::get_provinces(),
+                    'cities'    => Benana_Automation_Address::get_cities(),
+                )
+            );
+        }
     }
 
     public function enqueue_admin_assets( $hook ) {
-        wp_enqueue_style( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.css', array(), BENANA_AUTOMATION_VERSION );
-        wp_enqueue_style( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/css/admin.css', array( 'benana-jdp' ), '1.0.0' );
-        wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-admin' ), '1.0.0' );
-        wp_enqueue_script( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.js', array(), BENANA_AUTOMATION_VERSION, true );
-        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery', 'benana-jdp' ), '1.0.0', true );
-        wp_localize_script(
-            'benana-automation-admin',
-            'benanaAddress',
-            array(
-                'provinces' => Benana_Automation_Address::get_provinces(),
-                'cities'    => Benana_Automation_Address::get_cities(),
-            )
+        $benana_pages = array(
+            'toplevel_page_benana-automation-projects',
+            'benana-automation-projects_page_benana-automation-entries',
+            'benana-automation-projects_page_benana-automation-reports',
+            'benana-automation-projects_page_benana-automation-merge-tags',
         );
+
+        $is_profile_screen = in_array( $hook, array( 'profile.php', 'user-edit.php' ), true );
+        $is_plugin_screen  = in_array( $hook, $benana_pages, true );
+
+        if ( ! $is_profile_screen && ! $is_plugin_screen ) {
+            return;
+        }
+
+        wp_enqueue_style( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/css/admin.css', array(), '1.0.0' );
+        wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-admin' ), '1.0.0' );
+        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery' ), '1.0.0', true );
+
+        if ( $is_profile_screen ) {
+            wp_localize_script(
+                'benana-automation-admin',
+                'benanaAddress',
+                array(
+                    'provinces' => Benana_Automation_Address::get_provinces(),
+                    'cities'    => Benana_Automation_Address::get_cities(),
+                )
+            );
+        }
     }
 }
 

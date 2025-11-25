@@ -62,14 +62,11 @@
     margin-bottom: 16px;
 }
 
-.benana-availability-form .benana-inactive-options {
-    margin-top: 8px;
-}
-
-.benana-availability-form .benana-jdp-input {
-    max-width: 260px;
-    direction: ltr;
-    text-align: right;
+.benana-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
 }
 
 @media (max-width: 640px) {

@@ -30,33 +30,11 @@ jQuery(document).ready(function($){
         renderCities($(this));
     });
 
-    function initDatePicker() {
-        if ( window.jalaliDatepicker && $('.benana-jdp-input').length ) {
-            jalaliDatepicker.startWatch({
-                selector: '.benana-jdp-input',
-                time: true,
-                hasSecond: false,
-                autoHide: true,
-                autoShow: true,
-                persianDigits: true
-            });
-        }
-    }
-
     $(document).on('change', '.benana-availability-form select[name="user_province_id"]', function(){
         $(this).closest('form').find('.benana-city-select').each(function(){
             $(this).data('selected', '');
             renderCities($(this));
         });
     });
-
-    $(document).on('change', '.benana-availability-form input[name="user_is_active"]', function(){
-        if ( $(this).val() === '0' ) {
-            $(this).closest('form').find('.benana-inactive-options').slideDown();
-        } else {
-            $(this).closest('form').find('.benana-inactive-options').slideUp();
-        }
-    });
-
-    initDatePicker();
+    // toggle handled natively توسط چک‌باکس
 });

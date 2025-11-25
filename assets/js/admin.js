@@ -63,19 +63,6 @@ jQuery(document).ready(function($){
         });
     }
 
-    function initDatePicker() {
-        if ( window.jalaliDatepicker && $('.benana-jdp-input').length ) {
-            jalaliDatepicker.startWatch({
-                selector: '.benana-jdp-input',
-                time: true,
-                hasSecond: false,
-                autoHide: true,
-                autoShow: true,
-                persianDigits: true
-            });
-        }
-    }
-
     $('#user_province_id, .benana-availability-form select[name="user_province_id"]').on('change', function(){
         $(this).closest('td, .benana-availability-form').find('.benana-city-select').each(function(){
             $(this).data('selected', '');
@@ -85,13 +72,5 @@ jQuery(document).ready(function($){
 
     initCitySelectors();
 
-    $('input[name="user_is_active"]').on('change', function(){
-        if ( $(this).val() === '0' ) {
-            $('.benana-inactive-options').slideDown();
-        } else {
-            $('.benana-inactive-options').slideUp();
-        }
-    });
-
-    initDatePicker();
+    // toggle handled by native checkbox
 });

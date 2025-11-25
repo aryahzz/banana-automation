@@ -1,0 +1,7 @@
+{
+  "version": "1.3.5",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- حذف تنظیم فیلدهای بعد از قبول و نمایش خودکار فیلدهای پرشده پس از پذیرش\n- نمایش مقادیر واقعی فیلدهای فرم پیش از قبول و پنهان‌سازی مقادیر خالی\n- بروزرسانی نسخه و فید آپدیت برای دریافت از GitHub"
+}

@@ -12,10 +12,7 @@ class Benana_Automation_User_Profile {
         $city_ids        = (array) get_user_meta( $user->ID, 'user_city_ids', true );
         $is_active       = get_user_meta( $user->ID, 'user_is_active', true );
         $inactive_until  = get_user_meta( $user->ID, 'user_inactive_until', true );
-        $inactive_output = '';
-        if ( is_numeric( $inactive_until ) && intval( $inactive_until ) > 0 ) {
-            $inactive_output = gmdate( 'Y-m-d\TH:i', intval( $inactive_until ) );
-        }
+        $inactive_output = Benana_Automation_Date_Helper::format_for_picker( $inactive_until );
         if ( '' === $is_active ) {
             $is_active = '1';
         }
@@ -61,7 +58,7 @@ class Benana_Automation_User_Profile {
                 <th>وضعیت فعالیت</th>
                 <td class="benana-availability">
                     <label class="benana-radio">
-                        <input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال
+                        <input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال (پیش‌فرض)
                     </label>
                     <label class="benana-radio">
                         <input type="radio" name="user_is_active" value="0" <?php checked( $is_active, '0' ); ?> /> غیرفعال موقت
@@ -76,8 +73,8 @@ class Benana_Automation_User_Profile {
                             <option value="manual">تا اطلاع ثانوی</option>
                             <option value="custom">تاریخ و ساعت دلخواه</option>
                         </select>
-                        <input type="datetime-local" id="user_inactive_until" name="user_inactive_until" value="<?php echo esc_attr( $inactive_output ); ?>" placeholder="yyyy-mm-ddThh:mm" />
-                        <p class="description">بازه غیرفعالی را انتخاب کنید یا یک تاریخ/ساعت دستی وارد نمایید.</p>
+                        <input type="text" id="user_inactive_until" class="benana-jdp-input" data-jdp data-jdp-only-date="false" name="user_inactive_until" value="<?php echo esc_attr( $inactive_output ); ?>" placeholder="مثال: 1402/07/15 14:30" autocomplete="off" />
+                        <p class="description">با تقویم شمسی تاریخ و ساعت دلخواه را انتخاب کنید؛ مقدار ذخیره‌شده به‌صورت خودکار به تقویم میلادی تبدیل می‌شود.</p>
                     </div>
                 </td>
             </tr>
@@ -133,9 +130,9 @@ class Benana_Automation_User_Profile {
                     break;
                 case 'custom':
                     $custom = sanitize_text_field( wp_unslash( $_POST['user_inactive_until'] ?? '' ) );
-                    $time   = strtotime( $custom );
-                    if ( $time ) {
-                        $inactive_ts = $time;
+                    $parsed = Benana_Automation_Date_Helper::parse_inactive_input( $custom );
+                    if ( '' !== $parsed ) {
+                        $inactive_ts = $parsed;
                     }
                     break;
             }

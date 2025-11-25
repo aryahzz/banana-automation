@@ -483,20 +483,20 @@ class Benana_Automation_Shortcodes {
                         $inactive_until = time() + DAY_IN_SECONDS * 2;
                         break;
                     case '1w':
-                        $inactive_until = time() + WEEK_IN_SECONDS;
-                        break;
-                    case 'manual':
-                        $inactive_until = -1;
-                        break;
-                    case 'custom':
-                        $custom = sanitize_text_field( wp_unslash( $_POST['user_inactive_until'] ?? '' ) );
-                        $time   = strtotime( $custom );
-                        if ( $time ) {
-                            $inactive_until = $time;
-                        }
-                        break;
-                }
+            $inactive_until = time() + WEEK_IN_SECONDS;
+                    break;
+                case 'manual':
+                    $inactive_until = -1;
+                    break;
+                case 'custom':
+                    $custom = sanitize_text_field( wp_unslash( $_POST['user_inactive_until'] ?? '' ) );
+                    $parsed = Benana_Automation_Date_Helper::parse_inactive_input( $custom );
+                    if ( '' !== $parsed ) {
+                        $inactive_until = $parsed;
+                    }
+                    break;
             }
+        }
 
             update_user_meta( $user_id, 'user_province_id', $province_id );
             update_user_meta( $user_id, 'user_city_ids', $city_ids );
@@ -510,11 +510,7 @@ class Benana_Automation_Shortcodes {
         $city_ids        = (array) get_user_meta( $user_id, 'user_city_ids', true );
         $is_active       = get_user_meta( $user_id, 'user_is_active', true );
         $inactive_until  = get_user_meta( $user_id, 'user_inactive_until', true );
-        $inactive_output = '';
-
-        if ( is_numeric( $inactive_until ) && intval( $inactive_until ) > 0 ) {
-            $inactive_output = gmdate( 'Y-m-d\TH:i', intval( $inactive_until ) );
-        }
+        $inactive_output = Benana_Automation_Date_Helper::format_for_picker( $inactive_until );
 
         if ( '' === $is_active ) {
             $is_active = '1';
@@ -572,7 +568,8 @@ class Benana_Automation_Shortcodes {
                             <option value="manual">تا اطلاع ثانوی</option>
                             <option value="custom">تاریخ و ساعت دلخواه</option>
                         </select>
-                        <input type="datetime-local" name="user_inactive_until" value="<?php echo esc_attr( $inactive_output ); ?>" />
+                        <input type="text" name="user_inactive_until" class="benana-jdp-input" data-jdp data-jdp-only-date="false" value="<?php echo esc_attr( $inactive_output ); ?>" placeholder="مثال: 1402/07/15 14:30" autocomplete="off" />
+                        <p class="description">از تقویم شمسی برای تعیین تاریخ دلخواه استفاده کنید؛ زمان ذخیره‌شده به میلادی محاسبه می‌شود.</p>
                     </div>
                 </div>
                 <button type="submit" class="button button-primary">ثبت تغییرات</button>

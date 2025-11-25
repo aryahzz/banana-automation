@@ -3,7 +3,7 @@
 Plugin Name: بنانا اتوماسیون پروژه‌ها
 Plugin URI: https://github.com/aryahzz/banana-automation
 Description: سیستم اتوماسیون مدیریت پروژه با Gravity Forms و WP-SMS.
-Version: 1.3.9
+Version: 1.3.11
 Requires at least: 6.0
 Requires PHP: 7.4
 Author: Banana Automation
@@ -18,7 +18,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.3.10' );
+define( 'BENANA_AUTOMATION_VERSION', '1.3.11' );
+
+require_once BENANA_AUTOMATION_PATH . 'includes/class-date-helper.php';
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';
@@ -92,9 +94,11 @@ class Benana_Automation_Projects {
     }
 
     public function enqueue_front_assets() {
-        wp_enqueue_style( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/css/frontend.css', array(), '1.0.0' );
+        wp_enqueue_style( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.css', array(), BENANA_AUTOMATION_VERSION );
+        wp_enqueue_style( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/css/frontend.css', array( 'benana-jdp' ), '1.0.0' );
         wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-front' ), '1.0.0' );
-        wp_enqueue_script( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/js/frontend.js', array( 'jquery' ), '1.0.0', true );
+        wp_enqueue_script( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.js', array(), BENANA_AUTOMATION_VERSION, true );
+        wp_enqueue_script( 'benana-automation-front', BENANA_AUTOMATION_URL . 'assets/js/frontend.js', array( 'jquery', 'benana-jdp' ), '1.0.0', true );
         wp_localize_script(
             'benana-automation-front',
             'benanaAddress',
@@ -106,9 +110,11 @@ class Benana_Automation_Projects {
     }
 
     public function enqueue_admin_assets( $hook ) {
-        wp_enqueue_style( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/css/admin.css', array(), '1.0.0' );
+        wp_enqueue_style( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.css', array(), BENANA_AUTOMATION_VERSION );
+        wp_enqueue_style( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/css/admin.css', array( 'benana-jdp' ), '1.0.0' );
         wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-admin' ), '1.0.0' );
-        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery' ), '1.0.0', true );
+        wp_enqueue_script( 'benana-jdp', BENANA_AUTOMATION_URL . 'assets/vendor/jalalidatepicker/jalalidatepicker.min.js', array(), BENANA_AUTOMATION_VERSION, true );
+        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery', 'benana-jdp' ), '1.0.0', true );
         wp_localize_script(
             'benana-automation-admin',
             'benanaAddress',

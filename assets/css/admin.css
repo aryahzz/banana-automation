@@ -46,8 +46,15 @@
 }
 
 .benana-inactive-options select,
-.benana-inactive-options input {
-    max-width: 240px;
+.benana-inactive-options input,
+.benana-inactive-options .benana-jdp-input {
+    max-width: 260px;
+    margin-top: 6px;
+}
+
+.benana-jdp-input {
+    direction: ltr;
+    text-align: right;
 }
 
 .benana-filters {

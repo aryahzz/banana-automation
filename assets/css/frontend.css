@@ -66,6 +66,12 @@
     margin-top: 8px;
 }
 
+.benana-availability-form .benana-jdp-input {
+    max-width: 260px;
+    direction: ltr;
+    text-align: right;
+}
+
 @media (max-width: 640px) {
     .benana-card {
         display: block;

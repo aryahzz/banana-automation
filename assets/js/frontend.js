@@ -30,6 +30,19 @@ jQuery(document).ready(function($){
         renderCities($(this));
     });
 
+    function initDatePicker() {
+        if ( window.jalaliDatepicker && $('.benana-jdp-input').length ) {
+            jalaliDatepicker.startWatch({
+                selector: '.benana-jdp-input',
+                time: true,
+                hasSecond: false,
+                autoHide: true,
+                autoShow: true,
+                persianDigits: true
+            });
+        }
+    }
+
     $(document).on('change', '.benana-availability-form select[name="user_province_id"]', function(){
         $(this).closest('form').find('.benana-city-select').each(function(){
             $(this).data('selected', '');
@@ -44,4 +57,6 @@ jQuery(document).ready(function($){
             $(this).closest('form').find('.benana-inactive-options').slideUp();
         }
     });
+
+    initDatePicker();
 });

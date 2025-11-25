@@ -57,17 +57,16 @@ class Benana_Automation_Settings {
         </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
-                <p class="description">«فیلدهای قبل از قبول» را با ویرگول جدا کنید و می‌توانید هر دو فرمت را وارد کنید: <code>3,4,5</code> یا <code>{input_3},{Field:4},{3.1}</code>. مقادیر در لحظه ارسال فرم ذخیره می‌شوند تا در صفحه پروژه بدون وابستگی به مرج‌تگ‌های سراسری نمایش داده شوند. برای فیلد آپلود، شناسه فیلد فایل (تکی یا چندفایله) را وارد کنید تا فایل‌های ارسالی اساینی به همان ورودی پیوست شود.</p>
-                <table class="form-table" id="benana-gf-table">
+                              <table class="form-table" id="benana-gf-table">
                     <thead>
                         <tr>
-                            <th>Form ID</th>
+                            <th>آیدی فرم</th>
                             <th>فیلد شهر</th>
             <th>فیلد استان</th>
             <th>فیلد موبایل</th>
                             <th>فیلد آپلود</th>
-                            <th>فیلدهای قبل از قبول</th>
-                            <th>حذف</th>
+                            <th>فیلدهای پیش از پذیرش</th>
+                            <th>حذف ردیف</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -86,10 +85,10 @@ class Benana_Automation_Settings {
                 <h2>تنظیمات پیامک</h2>
                 <?php
                 $templates = array(
-                    'assign'            => 'پیامک اساینی هنگام ثبت',
-                    'accepted_assignee' => 'پیامک اساینی بعد از قبول',
-                    'accepted_client'   => 'پیامک درخواست‌کننده بعد از قبول',
-                    'file_uploaded'     => 'پیامک کاربر بعد از آپلود',
+                    'assign'            => 'پیامک کارگزاران هنگام ثبت',
+                    'accepted_assignee' => 'پیامک به مهندس پس از پذیرش',
+                    'accepted_client'   => 'پیامک به مشتری پس از پذیرش',
+                    'file_uploaded'     => 'پیامک مشتری بعد از آپلود',
                     'completed'         => 'پیامک‌های پایان پروژه',
                 );
                 foreach ( $templates as $key => $label ) {
@@ -158,8 +157,8 @@ class Benana_Automation_Settings {
                         <th>ورودی GF</th>
                         <th>وضعیت</th>
                         <th>استان/شهر</th>
-                        <th>اساینی‌ها</th>
-                        <th>پذیرفته‌شده توسط</th>
+                        <th>کارگزاران</th>
+                        <th>مهندس</th>
                         <th>فایل</th>
                         <th>تاریخ</th>
                     </tr>

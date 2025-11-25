@@ -6,6 +6,13 @@ class Benana_Automation_Gravity {
     }
 
     public function handle_submission( $entry, $form ) {
+        $payment_status = function_exists( 'rgar' ) ? rgar( $entry, 'payment_status' ) : '';
+
+        // برای فرم‌های پرداختی، فقط بعد از تکمیل پرداخت پروژه ساخته می‌شود.
+        if ( ! empty( $payment_status ) ) {
+            return;
+        }
+
         $this->maybe_create_project( $entry, $form, false );
     }
 
@@ -39,7 +46,7 @@ class Benana_Automation_Gravity {
         $mobile_field   = $form_settings['mobile_field'];
 
         $payment_status = rgar( $entry, 'payment_status' );
-        if ( ! $from_payment_hook && ! empty( $payment_status ) && 'Paid' !== $payment_status ) {
+        if ( ! $from_payment_hook && ! empty( $payment_status ) ) {
             return;
         }
 

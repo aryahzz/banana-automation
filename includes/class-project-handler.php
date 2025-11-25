@@ -4,13 +4,6 @@ class Benana_Automation_Project_Handler {
         $city_id     = is_string( $city_id ) ? trim( $city_id ) : $city_id;
         $province_id = is_string( $province_id ) ? trim( $province_id ) : $province_id;
         $city_id     = (string) $city_id;
-        $settings    = Benana_Automation_Settings::get_settings();
-        $debug_log   = array(
-            'province' => $province_id,
-            'city'     => $city_id,
-            'candidates' => array(),
-        );
-
         if ( '' === (string) $city_id ) {
             return array();
         }
@@ -62,36 +55,23 @@ class Benana_Automation_Project_Handler {
             );
 
             if ( ! in_array( $city_id, $user_cities, true ) ) {
-                $record['reason'] = 'city_mismatch';
-                $debug_log['candidates'][] = $record;
                 continue;
             }
 
             if ( '' === $inactive_until || empty( $inactive_until ) ) {
                 $filtered[] = $user->ID;
                 $record['matched'] = true;
-                $debug_log['candidates'][] = $record;
                 continue;
             }
 
             if ( intval( $inactive_until ) === -1 ) {
-                $record['reason'] = 'manual_inactive';
-                $debug_log['candidates'][] = $record;
                 continue;
             }
 
             if ( intval( $inactive_until ) < time() ) {
                 $filtered[] = $user->ID;
                 $record['matched'] = true;
-                $debug_log['candidates'][] = $record;
-            } else {
-                $record['reason'] = 'inactive_until_future';
-                $debug_log['candidates'][] = $record;
             }
-        }
-
-        if ( ! empty( $settings['debug_assignment'] ) ) {
-            self::log_assignment_debug( $debug_log );
         }
 
         return $filtered;
@@ -218,15 +198,4 @@ class Benana_Automation_Project_Handler {
         $sms_helper->send_sms( $context['client_mobile'], $message );
     }
 
-    private static function log_assignment_debug( $data ) {
-        $upload_dir = wp_upload_dir();
-        $dir        = trailingslashit( $upload_dir['basedir'] ) . 'benana-automation';
-        if ( ! file_exists( $dir ) ) {
-            wp_mkdir_p( $dir );
-        }
-
-        $file    = trailingslashit( $dir ) . 'assignment-debug.log';
-        $payload = '[' . current_time( 'mysql' ) . '] ' . wp_json_encode( $data, JSON_UNESCAPED_UNICODE );
-        file_put_contents( $file, $payload . PHP_EOL, FILE_APPEND );
-    }
 }

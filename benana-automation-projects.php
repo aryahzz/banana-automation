@@ -3,7 +3,7 @@
 Plugin Name: بنانا اتوماسیون پروژه‌ها
 Plugin URI: https://github.com/aryahzz/banana-automation
 Description: سیستم اتوماسیون مدیریت پروژه با Gravity Forms و WP-SMS.
-Version: 1.2.7
+Version: 1.3.0
 Requires at least: 6.0
 Requires PHP: 7.4
 Author: Banana Automation
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.2.8' );
+define( 'BENANA_AUTOMATION_VERSION', '1.3.0' );
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';
@@ -34,6 +34,7 @@ require_once BENANA_AUTOMATION_PATH . 'includes/class-updater.php';
 class Benana_Automation_Projects {
     public function __construct() {
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+        add_action( 'init', array( $this, 'ensure_projects_page' ), 5 );
         add_action( 'init', array( $this, 'init_classes' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_front_assets' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -54,6 +55,28 @@ class Benana_Automation_Projects {
 
     public function load_textdomain() {
         load_plugin_textdomain( 'benana-automation-projects', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+    }
+
+    public function ensure_projects_page() {
+        $page = get_page_by_path( 'projects' );
+
+        if ( ! $page ) {
+            wp_insert_post( array(
+                'post_title'   => 'پروژه‌ها',
+                'post_name'    => 'projects',
+                'post_status'  => 'publish',
+                'post_type'    => 'page',
+                'post_content' => '[project_detail]',
+            ) );
+            return;
+        }
+
+        if ( false === strpos( $page->post_content, '[project_detail]' ) ) {
+            wp_update_post( array(
+                'ID'           => $page->ID,
+                'post_content' => $page->post_content . '\n[project_detail]',
+            ) );
+        }
     }
 
     public function init_classes() {

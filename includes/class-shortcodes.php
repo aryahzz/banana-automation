@@ -86,6 +86,11 @@ class Benana_Automation_Shortcodes {
             return '<p>پروژه‌ای انتخاب نشده است.</p>';
         }
 
+        $project = get_post( $project_id );
+        if ( ! $project || 'project' !== $project->post_type ) {
+            return '<p>پروژه پیدا نشد.</p>';
+        }
+
         $user_id = get_current_user_id();
         if ( ! Benana_Automation_Project_Handler::user_is_assignee( $project_id, $user_id ) ) {
             return '<p>دسترسی به این پروژه ندارید.</p>';
@@ -102,13 +107,34 @@ class Benana_Automation_Shortcodes {
             $fields['after']  = $this->parse_field_list( $gf_settings['after_accept'] ?? '' );
         }
 
+        $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
+        $after_filled = array();
+
+        if ( $accepted ) {
+            foreach ( $fields['after'] as $field_key ) {
+                $value = isset( $entry[ $field_key ] ) ? $entry[ $field_key ] : '';
+                if ( is_array( $value ) ) {
+                    $value = array_filter( array_map( 'strval', $value ), function( $item ) {
+                        return '' !== trim( $item );
+                    } );
+                }
+
+                if ( '' !== trim( is_array( $value ) ? implode( '', $value ) : (string) $value ) ) {
+                    $after_filled[] = $field_key;
+                }
+            }
+        }
+
         $view = array(
-            'project'   => get_post( $project_id ),
+            'project'   => $project,
             'status'    => get_post_meta( $project_id, 'project_status', true ),
             'entry'     => $entry,
             'form'      => $form,
-            'fields'    => $fields,
-            'accepted'  => intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id,
+            'fields'    => array(
+                'before' => $fields['before'],
+                'after'  => $after_filled,
+            ),
+            'accepted'  => $accepted,
             'province'  => get_post_meta( $project_id, 'project_province_id', true ),
             'city'      => get_post_meta( $project_id, 'project_city_id', true ),
             'nonce'     => wp_create_nonce( 'benana_action_' . $project_id ),

@@ -18,7 +18,6 @@ class Benana_Automation_Settings {
                 'completed'          => 'پروژه {project_title} به پایان رسید. سپاسگزاریم.',
             ),
             'update_source'    => self::get_update_source_url(),
-            'debug_assignment' => 0,
         );
         $settings = get_option( self::OPTION_KEY, array() );
         $settings = wp_parse_args( $settings, $defaults );
@@ -53,17 +52,9 @@ class Benana_Automation_Settings {
             <?php endif; ?>
             <form method="post" action="options.php" id="benana-settings-form">
                 <?php settings_fields( 'benana_automation_settings' ); ?>
-                <p>
-                    <label>
-                        <input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[debug_assignment]" value="1" <?php checked( ! empty( $settings['debug_assignment'] ), true ); ?> />
-                        فعال‌سازی لاگ دیباگ اساین (خروجی در uploads/benana-automation/assignment-debug.log)
-                    </label>
-                </p>
-                <p>
-                    <button type="submit" class="button button-primary">ذخیره تنظیمات</button>
-                    <?php wp_nonce_field( 'benana_manual_update', 'benana_manual_update_nonce' ); ?>
-                    <button type="submit" formaction="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" formmethod="post" class="button" name="benana_manual_update_check" value="1">بررسی دستی بروزرسانی</button>
-                </p>
+        <p>
+            <button type="submit" class="button button-primary">ذخیره تنظیمات</button>
+        </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
                 <p class="description">فیلدهای قبل/بعد از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
@@ -108,6 +99,12 @@ class Benana_Automation_Settings {
                 }
                 ?>
 
+            </form>
+
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="benana-inline-form benana-update-check">
+                <?php wp_nonce_field( 'benana_manual_update', 'benana_manual_update_nonce' ); ?>
+                <input type="hidden" name="action" value="benana_manual_update_check" />
+                <button type="submit" class="button">بررسی دستی بروزرسانی</button>
             </form>
         </div>
         <?php
@@ -403,7 +400,7 @@ class Benana_Automation_Settings {
         }
 
         $clean['update_source']    = isset( $input['update_source'] ) ? esc_url_raw( $input['update_source'] ) : self::get_update_source_url();
-        $clean['debug_assignment'] = empty( $input['debug_assignment'] ) ? 0 : 1;
+        $clean['debug_assignment'] = 0;
 
         return $clean;
     }

@@ -14,13 +14,21 @@ class Benana_Automation_Gravity {
             return;
         }
 
-        $form_settings = $settings['gravity_forms'][ $form_id ];
-        $city_field    = $form_settings['city_field'];
-        $mobile_field  = $form_settings['mobile_field'];
-        $file_field    = $form_settings['file_field'];
+        $form_settings  = $settings['gravity_forms'][ $form_id ];
+        $city_field     = $form_settings['city_field'];
+        $province_field = isset( $form_settings['province_field'] ) ? $form_settings['province_field'] : '';
+        $mobile_field   = $form_settings['mobile_field'];
+        $file_field     = $form_settings['file_field'];
 
-        $province_id = substr( rgar( $entry, $city_field ), 0, 2 );
-        $city_id     = rgar( $entry, $city_field );
+        $city_raw     = rgar( $entry, $city_field );
+        $province_raw = $province_field ? rgar( $entry, $province_field ) : '';
+
+        $city_id     = is_string( $city_raw ) ? trim( $city_raw ) : $city_raw;
+        $province_id = is_string( $province_raw ) ? trim( $province_raw ) : $province_raw;
+
+        if ( empty( $province_id ) && ! empty( $city_id ) ) {
+            $province_id = substr( $city_id, 0, 2 );
+        }
         $project_id  = wp_insert_post( array(
             'post_type'   => 'project',
             'post_title'  => 'پروژه جدید #' . $form_id . '-' . rgar( $entry, 'id' ),

@@ -49,7 +49,8 @@ class Benana_Automation_Settings {
                         <tr>
                             <th>Form ID</th>
                             <th>فیلد شهر</th>
-                            <th>فیلد موبایل</th>
+            <th>فیلد استان</th>
+            <th>فیلد موبایل</th>
                             <th>فیلد آپلود</th>
                             <th>فیلدهای قبل از قبول</th>
                             <th>فیلدهای بعد از قبول</th>
@@ -146,6 +147,7 @@ class Benana_Automation_Settings {
                     <tr>
                         <th>شناسه</th>
                         <th>عنوان</th>
+                        <th>ورودی GF</th>
                         <th>وضعیت</th>
                         <th>استان/شهر</th>
                         <th>اساینی‌ها</th>
@@ -164,6 +166,9 @@ class Benana_Automation_Settings {
                             $city_id         = get_post_meta( $project_id, 'project_city_id', true );
                             $province_label  = isset( $provinces[ $province_id ] ) ? $provinces[ $province_id ] : '—';
                             $city_label      = Benana_Automation_Address::get_city_name( $province_id, $city_id );
+                            if ( '' === $city_label && ! empty( $city_id ) ) {
+                                $city_label = $city_id;
+                            }
                             $status          = get_post_meta( $project_id, 'project_status', true );
                             $status_label    = $status_map[ $status ] ?? 'نامشخص';
                             $assigned_raw    = get_post_meta( $project_id, 'assigned_users', true );
@@ -171,10 +176,22 @@ class Benana_Automation_Settings {
                             $accepted_by     = get_post_meta( $project_id, 'accepted_by', true );
                             $accepted_user   = $accepted_by ? get_user_by( 'id', $accepted_by ) : false;
                             $file_url        = get_post_meta( $project_id, 'file_url', true );
+                            $gf_entry_id     = get_post_meta( $project_id, 'gf_entry_id', true );
+                            $gf_form_id      = get_post_meta( $project_id, 'gf_form_id', true );
+                            $gf_link         = ( $gf_entry_id && $gf_form_id ) ? add_query_arg(
+                                array(
+                                    'page' => 'gf_entries',
+                                    'view' => 'entry',
+                                    'id'   => $gf_form_id,
+                                    'lid'  => $gf_entry_id,
+                                ),
+                                admin_url( 'admin.php' )
+                            ) : '';
                             ?>
                             <tr>
                                 <td>#<?php echo esc_html( $project_id ); ?></td>
                                 <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
+                                <td><?php echo $gf_link ? '<a href="' . esc_url( $gf_link ) . '">مشاهده ورودی</a>' : '—'; ?></td>
                                 <td><span class="status-tag status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
                                 <td><?php echo esc_html( $province_label . ' / ' . $city_label ); ?></td>
                                 <td><?php echo esc_html( is_array( $assigned_users ) ? count( $assigned_users ) : 0 ); ?></td>
@@ -321,11 +338,12 @@ class Benana_Automation_Settings {
 
     private function render_gf_row( $row_key, $form_id, $form_settings, $is_template = false ) {
         $defaults = array(
-            'city_field'    => '',
-            'mobile_field'  => '',
-            'file_field'    => '',
-            'before_accept' => '',
-            'after_accept'  => '',
+            'city_field'     => '',
+            'province_field' => '',
+            'mobile_field'   => '',
+            'file_field'     => '',
+            'before_accept'  => '',
+            'after_accept'   => '',
         );
         $form_settings = wp_parse_args( $form_settings, $defaults );
         $row_classes   = $is_template ? 'benana-gf-row benana-gf-template' : 'benana-gf-row';
@@ -335,6 +353,7 @@ class Benana_Automation_Settings {
         <tr class="<?php echo esc_attr( $row_classes ); ?>" data-row-key="<?php echo esc_attr( $row_key ); ?>" <?php echo $style; ?>>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][form_id]" value="<?php echo esc_attr( $form_id ); ?>" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][city_field]" value="<?php echo esc_attr( $form_settings['city_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][province_field]" value="<?php echo esc_attr( $form_settings['province_field'] ); ?>" placeholder="اختیاری: مانند 28.4" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" placeholder="مثال: 3,4 یا {input_5}" /></td>
@@ -361,11 +380,12 @@ class Benana_Automation_Settings {
                 $after  = isset( $row['after_accept'] ) ? $this->sanitize_comma_separated( $row['after_accept'] ) : '';
 
                 $clean['gravity_forms'][ $form_id ] = array(
-                    'city_field'    => isset( $row['city_field'] ) ? sanitize_text_field( $row['city_field'] ) : '',
-                    'mobile_field'  => isset( $row['mobile_field'] ) ? sanitize_text_field( $row['mobile_field'] ) : '',
-                    'file_field'    => isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '',
-                    'before_accept' => $before,
-                    'after_accept'  => $after,
+                    'city_field'     => isset( $row['city_field'] ) ? sanitize_text_field( $row['city_field'] ) : '',
+                    'province_field' => isset( $row['province_field'] ) ? sanitize_text_field( $row['province_field'] ) : '',
+                    'mobile_field'   => isset( $row['mobile_field'] ) ? sanitize_text_field( $row['mobile_field'] ) : '',
+                    'file_field'     => isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '',
+                    'before_accept'  => $before,
+                    'after_accept'   => $after,
                 );
             }
         }

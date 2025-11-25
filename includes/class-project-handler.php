@@ -1,26 +1,48 @@
 <?php
 class Benana_Automation_Project_Handler {
     public static function find_assignees( $province_id, $city_id ) {
-        $args  = array(
-            'meta_query' => array(
-                'relation' => 'AND',
+        $city_id     = is_string( $city_id ) ? trim( $city_id ) : $city_id;
+        $province_id = is_string( $province_id ) ? trim( $province_id ) : $province_id;
+
+        $meta_query = array(
+            'relation' => 'AND',
+            array(
+                'relation' => 'OR',
+                array(
+                    'key'     => 'user_is_active',
+                    'compare' => 'NOT EXISTS',
+                ),
                 array(
                     'key'     => 'user_is_active',
                     'value'   => '1',
                     'compare' => '=',
                 ),
-                array(
-                    'key'     => 'user_city_ids',
-                    'value'   => $city_id,
-                    'compare' => 'LIKE',
-                ),
             ),
         );
-        $users = get_users( $args );
+
+        if ( ! empty( $province_id ) ) {
+            $meta_query[] = array(
+                'key'     => 'user_province_id',
+                'value'   => $province_id,
+                'compare' => '=',
+            );
+        }
+
+        $users = get_users(
+            array(
+                'meta_query' => $meta_query,
+            )
+        );
 
         $filtered = array();
         foreach ( $users as $user ) {
+            $user_cities    = (array) get_user_meta( $user->ID, 'user_city_ids', true );
             $inactive_until = get_user_meta( $user->ID, 'user_inactive_until', true );
+
+            if ( ! in_array( $city_id, $user_cities, true ) ) {
+                continue;
+            }
+
             if ( '' === $inactive_until || empty( $inactive_until ) ) {
                 $filtered[] = $user->ID;
                 continue;

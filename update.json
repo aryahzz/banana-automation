@@ -1,7 +1,7 @@
 {
-    "version": "1.2.2",
+    "version": "1.2.3",
     "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
     "requires": "6.0",
     "tested": "6.5",
-    "changelog": "- لینک دانلود آپدیت به مخزن اصلی GitHub تغییر کرد\n- نسخه افزونه به 1.2.2 بروزرسانی شد برای هماهنگی با فید آپدیت"
+    "changelog": "- رفع مشکل اساین‌نشدن کاربران فعال بر اساس شهر و استان\n- لینک دانلود آپدیت از مخزن GitHub\n- نسخه افزونه به 1.2.3 بروزرسانی شد"
 }

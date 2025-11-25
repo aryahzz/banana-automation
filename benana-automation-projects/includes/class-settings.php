@@ -28,7 +28,7 @@ class Benana_Automation_Settings {
     }
 
     public function register_settings() {
-        register_setting( 'benana_automation_settings', self::OPTION_KEY );
+        register_setting( 'benana_automation_settings', self::OPTION_KEY, array( $this, 'sanitize_settings' ) );
     }
 
     public function settings_page() {
@@ -39,7 +39,8 @@ class Benana_Automation_Settings {
             <form method="post" action="options.php">
                 <?php settings_fields( 'benana_automation_settings' ); ?>
                 <h2>تنظیمات Gravity Forms</h2>
-                <p>برای هر فرم، شناسه فیلدهای شهر، موبایل، فایل و نمایش را وارد کنید.</p>
+                <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
+                <p class="description">فیلدهای قبل/بعد از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
                 <table class="form-table" id="benana-gf-table">
                     <thead>
                         <tr>
@@ -49,14 +50,17 @@ class Benana_Automation_Settings {
                             <th>فیلد آپلود</th>
                             <th>فیلدهای قبل از قبول</th>
                             <th>فیلدهای بعد از قبول</th>
+                            <th>حذف</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
+                        $row_index = 0;
                         foreach ( $settings['gravity_forms'] as $form_id => $form_settings ) {
-                            $this->render_gf_row( $form_id, $form_settings );
+                            $this->render_gf_row( 'row_' . $row_index, $form_id, $form_settings );
+                            $row_index++;
                         }
-                        $this->render_gf_row( '', array() );
+                        $this->render_gf_row( 'row_template', '', array(), true );
                         ?>
                     </tbody>
                 </table>
@@ -82,7 +86,7 @@ class Benana_Automation_Settings {
         <?php
     }
 
-    private function render_gf_row( $form_id, $form_settings ) {
+    private function render_gf_row( $row_key, $form_id, $form_settings, $is_template = false ) {
         $defaults = array(
             'city_field'    => '',
             'mobile_field'  => '',
@@ -91,16 +95,54 @@ class Benana_Automation_Settings {
             'after_accept'  => '',
         );
         $form_settings = wp_parse_args( $form_settings, $defaults );
+        $row_classes   = $is_template ? 'benana-gf-row benana-gf-template' : 'benana-gf-row';
+        $disabled_attr = $is_template ? 'disabled="disabled"' : '';
+        $style         = $is_template ? 'style="display:none;"' : '';
         ?>
-        <tr>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][form_id]" value="<?php echo esc_attr( $form_id ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][city_field]" value="<?php echo esc_attr( $form_settings['city_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" /></td>
-            <td><input type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $form_id ); ?>][after_accept]" value="<?php echo esc_attr( $form_settings['after_accept'] ); ?>" /></td>
+        <tr class="<?php echo esc_attr( $row_classes ); ?>" data-row-key="<?php echo esc_attr( $row_key ); ?>" <?php echo $style; ?>>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][form_id]" value="<?php echo esc_attr( $form_id ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][city_field]" value="<?php echo esc_attr( $form_settings['city_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" placeholder="مثال: 3,4 یا {input_5}" /></td>
+            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][after_accept]" value="<?php echo esc_attr( $form_settings['after_accept'] ); ?>" placeholder="مثال: 6,7 یا {Field:8}" /></td>
+            <td><button type="button" class="button benana-remove-gf" <?php echo $is_template ? 'disabled="disabled"' : ''; ?>>حذف</button></td>
         </tr>
         <?php
+    }
+
+    public function sanitize_settings( $input ) {
+        $clean = self::get_settings();
+
+        $clean['sms_templates'] = isset( $input['sms_templates'] ) && is_array( $input['sms_templates'] ) ? array_map( 'wp_kses_post', $input['sms_templates'] ) : $clean['sms_templates'];
+
+        $clean['gravity_forms'] = array();
+        if ( isset( $input['gravity_forms'] ) && is_array( $input['gravity_forms'] ) ) {
+            foreach ( $input['gravity_forms'] as $row ) {
+                $form_id = isset( $row['form_id'] ) ? sanitize_text_field( $row['form_id'] ) : '';
+                if ( '' === $form_id ) {
+                    continue;
+                }
+
+                $before = isset( $row['before_accept'] ) ? $this->sanitize_comma_separated( $row['before_accept'] ) : '';
+                $after  = isset( $row['after_accept'] ) ? $this->sanitize_comma_separated( $row['after_accept'] ) : '';
+
+                $clean['gravity_forms'][ $form_id ] = array(
+                    'city_field'    => isset( $row['city_field'] ) ? sanitize_text_field( $row['city_field'] ) : '',
+                    'mobile_field'  => isset( $row['mobile_field'] ) ? sanitize_text_field( $row['mobile_field'] ) : '',
+                    'file_field'    => isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '',
+                    'before_accept' => $before,
+                    'after_accept'  => $after,
+                );
+            }
+        }
+
+        return $clean;
+    }
+
+    private function sanitize_comma_separated( $value ) {
+        $parts = array_filter( array_map( 'trim', explode( ',', (string) $value ) ) );
+        return implode( ',', $parts );
     }
 
     public function merge_tags_page() {

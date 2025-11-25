@@ -26,22 +26,23 @@ class Benana_Automation_Shortcodes {
             return;
         }
 
-        $status  = 'none';
-        $message = '';
+        $status        = 'none';
+        $message       = '';
+        $project_status = get_post_meta( $project_id, 'project_status', true );
 
-        if ( $action === 'accept' ) {
+        if ( $action === 'accept' && 'new' === $project_status ) {
             Benana_Automation_Project_Handler::accept_project( $project_id, $user_id );
             $status = 'accepted';
         }
-        if ( $action === 'reject' ) {
+        if ( $action === 'reject' && 'new' === $project_status ) {
             Benana_Automation_Project_Handler::reject_project( $project_id, $user_id );
             $status = 'rejected';
         }
-        if ( $action === 'complete' ) {
+        if ( $action === 'complete' && in_array( $project_status, array( 'accepted', 'file_uploaded' ), true ) ) {
             Benana_Automation_Project_Handler::complete_project( $project_id );
             $status = 'completed';
         }
-        if ( 'upload_file' === $action ) {
+        if ( 'upload_file' === $action && 'accepted' === $project_status ) {
             $upload_result = $this->handle_file_upload( $project_id, $user_id );
             $status        = $upload_result['status'];
             $message       = $upload_result['message'];
@@ -71,7 +72,7 @@ class Benana_Automation_Shortcodes {
 
         $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) );
         if ( $accepted !== intval( $user_id ) ) {
-            $result['message'] = 'فقط کاربر پذیرفته‌کننده می‌تواند فایل بارگذاری کند.';
+            $result['message'] = 'فقط مهندسی که پذیرفته‌ می‌تواند فایل بارگذاری کند.';
             return $result;
         }
 
@@ -203,7 +204,14 @@ class Benana_Automation_Shortcodes {
                 'value' => $status,
             );
         }
-        $projects = get_posts( $args );
+        $projects       = get_posts( $args );
+        $status_labels  = array(
+            'new'           => 'در انتظار پذیرش',
+            'accepted'      => 'در حال انجام',
+            'file_uploaded' => 'فایل بارگذاری شده',
+            'completed'     => 'تکمیل شده',
+            'rejected'      => 'رد شده',
+        );
         ob_start();
         include BENANA_AUTOMATION_PATH . 'templates/inbox.php';
         return ob_get_clean();
@@ -234,21 +242,24 @@ class Benana_Automation_Shortcodes {
         $entry         = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
         $snapshot      = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
         $form_id       = get_post_meta( $project_id, 'gf_form_id', true );
+        $status        = get_post_meta( $project_id, 'project_status', true );
 
         if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
             $form_id = $entry['form_id'];
         }
 
         $form = ( function_exists( 'GFAPI' ) && ! empty( $form_id ) ) ? GFAPI::get_form( $form_id ) : array();
-        $settings = Benana_Automation_Settings::get_settings();
-        $fields   = array( 'before' => array() );
+        $settings     = Benana_Automation_Settings::get_settings();
+        $fields       = array( 'before' => array() );
+        $upload_field = '';
         if ( isset( $settings['gravity_forms'][ $form_id ] ) ) {
             $gf_settings      = $settings['gravity_forms'][ $form_id ];
             $fields['before'] = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
+            $upload_field     = $gf_settings['file_field'] ?? ( $gf_settings['upload_field'] ?? '' );
         }
 
-        $accepted     = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields  = array();
+        $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
+        $render_fields = array();
 
         foreach ( $fields['before'] as $field_key ) {
             $value = $this->resolve_field_value( $field_key, $entry, $form, $snapshot['display'] );
@@ -263,7 +274,7 @@ class Benana_Automation_Shortcodes {
             );
         }
 
-        if ( $accepted && ! empty( $form['fields'] ) ) {
+        if ( 'new' !== $status && ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( '' === $fid ) {
@@ -289,7 +300,8 @@ class Benana_Automation_Shortcodes {
 
         $view = array(
             'project'       => $project,
-            'status'        => get_post_meta( $project_id, 'project_status', true ),
+            'status'        => $status,
+            'status_label'  => $this->translate_status( $status ),
             'entry'         => $entry,
             'form'          => $form,
             'fields'        => $render_fields,
@@ -408,6 +420,19 @@ class Benana_Automation_Shortcodes {
         }
 
         return $field_id;
+    }
+
+    private function translate_status( $status ) {
+        $map = array(
+            'new'           => 'در انتظار پذیرش',
+            'accepted'      => 'در حال انجام',
+            'file_uploaded' => 'فایل بارگذاری شده',
+            'completed'     => 'تکمیل شده',
+            'rejected'      => 'رد شده',
+            'approved'      => 'تأیید شده',
+        );
+
+        return $map[ $status ] ?? $status;
     }
 
     public function history_shortcode() {

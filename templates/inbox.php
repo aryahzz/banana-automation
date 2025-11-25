@@ -4,8 +4,9 @@
         <input type="text" name="benana_search" value="<?php echo isset( $_GET['benana_search'] ) ? esc_attr( wp_unslash( $_GET['benana_search'] ) ) : ''; ?>" placeholder="جستجو در عنوان پروژه" />
         <select name="benana_status">
             <option value="">همه وضعیت‌ها</option>
-            <option value="assigned" <?php selected( 'assigned', isset( $_GET['benana_status'] ) ? wp_unslash( $_GET['benana_status'] ) : '' ); ?>>در انتظار قبول</option>
+            <option value="new" <?php selected( 'new', isset( $_GET['benana_status'] ) ? wp_unslash( $_GET['benana_status'] ) : '' ); ?>>در انتظار پذیرش</option>
             <option value="accepted" <?php selected( 'accepted', isset( $_GET['benana_status'] ) ? wp_unslash( $_GET['benana_status'] ) : '' ); ?>>در حال انجام</option>
+            <option value="file_uploaded" <?php selected( 'file_uploaded', isset( $_GET['benana_status'] ) ? wp_unslash( $_GET['benana_status'] ) : '' ); ?>>منتظر بررسی فایل</option>
             <option value="completed" <?php selected( 'completed', isset( $_GET['benana_status'] ) ? wp_unslash( $_GET['benana_status'] ) : '' ); ?>>تکمیل شده</option>
         </select>
         <button type="submit" class="button">اعمال فیلتر</button>
@@ -21,7 +22,7 @@
             ?>
             <div class="benana-card">
                 <strong><?php echo esc_html( get_the_title( $project ) ); ?></strong>
-                <div class="meta">وضعیت: <?php echo esc_html( $status ); ?></div>
+                <div class="meta">وضعیت: <?php echo esc_html( $status_labels[ $status ] ?? $status ); ?></div>
                 <?php if ( $city ) : ?>
                     <div class="meta">شهر: <?php echo esc_html( $city ); ?></div>
                 <?php endif; ?>

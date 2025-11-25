@@ -1,7 +1,7 @@
 <div class="benana-project-detail">
     <h3><?php echo esc_html( $view['project']->post_title ); ?></h3>
     <div class="benana-meta">
-        <span>وضعیت: <?php echo esc_html( $view['status'] ); ?></span>
+        <span>وضعیت: <?php echo esc_html( $view['status_label'] ); ?></span>
         <span>موقعیت: <?php echo esc_html( Benana_Automation_Address::get_city_name( $view['province'], $view['city'] ) ); ?></span>
     </div>
 
@@ -9,7 +9,7 @@
         <div class="benana-alert <?php echo ( 'uploaded' === $view['action_msg'] || 'accepted' === $view['action_msg'] ) ? 'success' : 'warning'; ?>">
             <?php
             if ( 'accepted' === $view['action_msg'] ) {
-                echo 'پروژه با موفقیت پذیرفته شد.';
+                echo 'پروژه توسط شما پذیرفته شد.';
             } elseif ( 'rejected' === $view['action_msg'] ) {
                 echo 'پروژه رد شد.';
             } elseif ( 'completed' === $view['action_msg'] ) {
@@ -28,12 +28,12 @@
     <?php endif; ?>
 
     <div class="benana-actions">
-        <?php if ( 'accepted' !== $view['status'] ) : ?>
+        <?php if ( 'new' === $view['status'] ) : ?>
             <form method="post" class="benana-inline-form">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="accept" />
                 <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
-                <button type="submit" class="button button-primary">قبول</button>
+                <button type="submit" class="button button-primary">پذیرش</button>
             </form>
             <form method="post" class="benana-inline-form">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
@@ -41,8 +41,8 @@
                 <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
                 <button type="submit" class="button">رد</button>
             </form>
-        <?php else : ?>
-            <p>پروژه توسط شما پذیرفته شده است.</p>
+        <?php elseif ( 'accepted' === $view['status'] ) : ?>
+            <p>این پروژه را به‌عنوان مهندس پذیرفته‌اید.</p>
             <form method="post" class="benana-inline-form">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="complete" />
@@ -52,16 +52,15 @@
         <?php endif; ?>
     </div>
 
-    <?php if ( in_array( $view['status'], array( 'accepted', 'file_uploaded' ), true ) ) : ?>
+    <?php if ( 'accepted' === $view['status'] ) : ?>
         <div class="benana-upload-box">
             <h4>بارگذاری فایل پروژه</h4>
-            <p class="description">فایل یا فایل‌های پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ?: '—' ); ?>) پیوست شود و در ورود Gravity Forms ذخیره گردد.</p>
+            <p class="description">فایل پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ?: '—' ); ?>) پیوست شود.</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="upload_file" />
                 <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
                 <input type="file" name="benana_project_files[]" multiple />
-                <p class="description">پس از انتخاب فایل، روی «ارسال فایل» کلیک کنید تا به ورودی شماره <?php echo esc_html( $view['entry_id'] ); ?> افزوده شود.</p>
                 <button type="submit" class="button">ارسال فایل</button>
             </form>
         </div>
@@ -69,7 +68,7 @@
 
     <?php if ( ! empty( $view['fields'] ) ) : ?>
         <div class="benana-entry-fields">
-            <h4>جزئیات فرم</h4>
+            <h4>جزئیات پروژه</h4>
             <?php
             foreach ( $view['fields'] as $field ) {
                 $value = is_array( $field['value'] ) ? implode( '، ', (array) $field['value'] ) : $field['value'];

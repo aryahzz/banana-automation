@@ -1,5 +1,5 @@
 <div class="benana-history">
-    <h3>تاریخچه درخواست‌های من</h3>
+    <h3>تاریخچه پروژه‌های من</h3>
     <form class="benana-filter" method="get">
         <input type="text" name="benana_history_search" value="<?php echo isset( $_GET['benana_history_search'] ) ? esc_attr( wp_unslash( $_GET['benana_history_search'] ) ) : ''; ?>" placeholder="جستجو در عنوان یا توضیح پروژه" />
         <button type="submit" class="button">جستجو</button>

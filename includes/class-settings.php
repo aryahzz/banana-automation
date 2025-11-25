@@ -11,10 +11,10 @@ class Benana_Automation_Settings {
         $defaults = array(
             'gravity_forms'    => array(),
             'sms_templates'    => array(
-                'assign'             => 'پروژه جدید برای شما ثبت شد. شناسه: {project_id}',
-                'accepted_assignee'  => 'پروژه {project_title} را شما پذیرفتید.',
-                'accepted_client'    => 'پروژه شما با شناسه {project_id} پذیرفته شد.',
-                'file_uploaded'      => 'فایل پروژه {project_title} بارگذاری شد: {file_url}',
+                'assign'             => 'کارگزار گرامی، پروژه جدیدی برای شما ثبت شد. شناسه: {project_id}',
+                'accepted_assignee'  => 'پروژه {project_title} را به‌عنوان مهندس پذیرفتید.',
+                'accepted_client'    => 'مشتری گرامی، پروژه شما با شناسه {project_id} پذیرفته شد.',
+                'file_uploaded'      => 'فایل پروژه {project_title} ثبت شد: {file_url}',
                 'completed'          => 'پروژه {project_title} به پایان رسید. سپاسگزاریم.',
             ),
             'update_source'    => self::get_update_source_url(),
@@ -57,7 +57,7 @@ class Benana_Automation_Settings {
         </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
-                <p class="description">«فیلدهای قبل از قبول» را با ویرگول جدا کنید و می‌توانید هر دو فرمت را وارد کنید: <code>3,4,5</code> یا <code>{input_3},{Field:4},{3.1}</code>. مقادیر در لحظه ارسال فرم ذخیره می‌شوند تا در صفحه پروژه بدون وابستگی به مرج‌تگ‌های سراسری نمایش داده شوند. برای فیلد آپلود، شناسه فیلد فایل (تکی یا چندفایله) را وارد کنید تا فایل‌های ارسالی اساینی به همان ورودی پیوست شود.</p>
+                <p class="description">شناسه فیلدهای «پیش از پذیرش» را با ویرگول وارد کنید و شناسه فیلد آپلود فایل را نیز مشخص نمایید.</p>
                 <table class="form-table" id="benana-gf-table">
                     <thead>
                         <tr>
@@ -66,7 +66,7 @@ class Benana_Automation_Settings {
             <th>فیلد استان</th>
             <th>فیلد موبایل</th>
                             <th>فیلد آپلود</th>
-                            <th>فیلدهای قبل از قبول</th>
+                            <th>فیلدهای پیش از پذیرش</th>
                             <th>حذف</th>
                         </tr>
                     </thead>
@@ -86,10 +86,10 @@ class Benana_Automation_Settings {
                 <h2>تنظیمات پیامک</h2>
                 <?php
                 $templates = array(
-                    'assign'            => 'پیامک اساینی هنگام ثبت',
-                    'accepted_assignee' => 'پیامک اساینی بعد از قبول',
-                    'accepted_client'   => 'پیامک درخواست‌کننده بعد از قبول',
-                    'file_uploaded'     => 'پیامک کاربر بعد از آپلود',
+                    'assign'            => 'پیامک کارگزار هنگام ثبت',
+                    'accepted_assignee' => 'پیامک کارگزار پس از پذیرش',
+                    'accepted_client'   => 'پیامک مشتری پس از پذیرش',
+                    'file_uploaded'     => 'پیامک مشتری پس از بارگذاری فایل',
                     'completed'         => 'پیامک‌های پایان پروژه',
                 );
                 foreach ( $templates as $key => $label ) {
@@ -158,7 +158,7 @@ class Benana_Automation_Settings {
                         <th>ورودی GF</th>
                         <th>وضعیت</th>
                         <th>استان/شهر</th>
-                        <th>اساینی‌ها</th>
+                        <th>کارگزاران</th>
                         <th>پذیرفته‌شده توسط</th>
                         <th>فایل</th>
                         <th>تاریخ</th>

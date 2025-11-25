@@ -109,7 +109,7 @@ class Benana_Automation_CPT {
                 ?>
             </select>
         </p>
-        <p class="description">کاربر انتخاب‌شده به لیست اساینی‌ها افزوده می‌شود.</p>
+        <p class="description">کاربر انتخاب‌شده به لیست کارگزاران افزوده می‌شود.</p>
         <?php
     }
 

@@ -1,0 +1,7 @@
+{
+  "version": "1.3.8",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- رفع مشکل عدم عمل‌کرد دکمه‌های قبول/رد با پردازش اقدام در template_redirect و پیغام موفقیت\n- محدود کردن اساین‌ها به کاربر پذیرفته‌شده و نمایش پیام نتیجه در صفحه پروژه\n- ارتقا نسخه افزونه برای هماهنگی با فید آپدیت"
+}

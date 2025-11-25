@@ -72,7 +72,7 @@ class Benana_Automation_Shortcodes {
 
         $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) );
         if ( $accepted !== intval( $user_id ) ) {
-            $result['message'] = 'فقط مهندس پذیرفته‌کننده می‌تواند فایل بارگذاری کند.';
+            $result['message'] = 'فقط مهندسی که پذیرفته‌ می‌تواند فایل بارگذاری کند.';
             return $result;
         }
 

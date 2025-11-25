@@ -4,6 +4,10 @@ class Benana_Automation_Project_Handler {
         $city_id     = is_string( $city_id ) ? trim( $city_id ) : $city_id;
         $province_id = is_string( $province_id ) ? trim( $province_id ) : $province_id;
 
+        if ( '' === (string) $city_id ) {
+            return array();
+        }
+
         $meta_query = array(
             'relation' => 'AND',
             array(
@@ -36,7 +40,7 @@ class Benana_Automation_Project_Handler {
 
         $filtered = array();
         foreach ( $users as $user ) {
-            $user_cities    = (array) get_user_meta( $user->ID, 'user_city_ids', true );
+            $user_cities    = array_map( 'strval', (array) get_user_meta( $user->ID, 'user_city_ids', true ) );
             $inactive_until = get_user_meta( $user->ID, 'user_inactive_until', true );
 
             if ( ! in_array( $city_id, $user_cities, true ) ) {

@@ -23,12 +23,9 @@ class Benana_Automation_Gravity {
         $city_raw     = rgar( $entry, $city_field );
         $province_raw = $province_field ? rgar( $entry, $province_field ) : '';
 
-        $city_id     = is_string( $city_raw ) ? trim( $city_raw ) : $city_raw;
-        $province_id = is_string( $province_raw ) ? trim( $province_raw ) : $province_raw;
-
-        if ( empty( $province_id ) && ! empty( $city_id ) ) {
-            $province_id = substr( $city_id, 0, 2 );
-        }
+        $location    = Benana_Automation_Address::normalize_location( $province_raw, $city_raw );
+        $city_id     = $location['city_id'];
+        $province_id = $location['province_id'];
         $project_id  = wp_insert_post( array(
             'post_type'   => 'project',
             'post_title'  => 'پروژه جدید #' . $form_id . '-' . rgar( $entry, 'id' ),

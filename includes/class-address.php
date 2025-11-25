@@ -2807,6 +2807,97 @@ class Benana_Automation_Address {
         );
     }
 
+    private static function normalize_text( $value ) {
+        $value = wp_strip_all_tags( (string) $value );
+        $value = str_replace( array( 'ي', 'ك' ), array( 'ی', 'ک' ), $value );
+        $value = preg_replace( '/\s+/', '', $value );
+
+        return mb_strtolower( $value, 'UTF-8' );
+    }
+
+    private static function match_province_id( $province_value ) {
+        $provinces = self::get_provinces();
+
+        if ( isset( $provinces[ $province_value ] ) ) {
+            return $province_value;
+        }
+
+        if ( is_numeric( $province_value ) ) {
+            $padded = str_pad( (string) intval( $province_value ), 2, '0', STR_PAD_LEFT );
+            if ( isset( $provinces[ $padded ] ) ) {
+                return $padded;
+            }
+        }
+
+        $normalized = self::normalize_text( $province_value );
+
+        foreach ( $provinces as $pid => $pname ) {
+            if ( self::normalize_text( $pid ) === $normalized || self::normalize_text( $pname ) === $normalized ) {
+                return $pid;
+            }
+        }
+
+        return '';
+    }
+
+    private static function find_city_in_province( $province_id, $city_value ) {
+        $cities = self::get_cities();
+
+        if ( empty( $province_id ) || empty( $city_value ) || ! isset( $cities[ $province_id ] ) ) {
+            return '';
+        }
+
+        if ( isset( $cities[ $province_id ][ $city_value ] ) ) {
+            return $city_value;
+        }
+
+        $normalized_city = self::normalize_text( $city_value );
+
+        foreach ( $cities[ $province_id ] as $cid => $cname ) {
+            if ( self::normalize_text( $cid ) === $normalized_city || self::normalize_text( $cname ) === $normalized_city ) {
+                return $cid;
+            }
+        }
+
+        return '';
+    }
+
+    private static function find_city_globally( $city_value ) {
+        $normalized_city = self::normalize_text( $city_value );
+
+        if ( '' === $normalized_city ) {
+            return array( '', '' );
+        }
+
+        foreach ( self::get_cities() as $province_id => $cities ) {
+            foreach ( $cities as $cid => $cname ) {
+                if ( self::normalize_text( $cid ) === $normalized_city || self::normalize_text( $cname ) === $normalized_city ) {
+                    return array( $province_id, $cid );
+                }
+            }
+        }
+
+        return array( '', '' );
+    }
+
+    public static function normalize_location( $province_value, $city_value ) {
+        $province_id = self::match_province_id( $province_value );
+        $city_id     = self::find_city_in_province( $province_id, $city_value );
+
+        if ( '' === $city_id && '' !== self::normalize_text( $city_value ) ) {
+            list( $found_province, $found_city ) = self::find_city_globally( $city_value );
+            if ( $found_city ) {
+                $city_id     = $found_city;
+                $province_id = $province_id ? $province_id : $found_province;
+            }
+        }
+
+        return array(
+            'province_id' => $province_id,
+            'city_id'     => $city_id,
+        );
+    }
+
     public static function get_city_name( $province_id, $city_id ) {
         $cities = self::get_cities();
         if ( isset( $cities[ $province_id ][ $city_id ] ) ) {

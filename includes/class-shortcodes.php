@@ -214,7 +214,7 @@ class Benana_Automation_Shortcodes {
 
         // Direct entry value first (supports 1.3 style sub-inputs).
         if ( isset( $entry[ $clean ] ) ) {
-            return $entry[ $clean ];
+            return $this->decode_unicode_literals( $entry[ $clean ] );
         }
 
         if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
@@ -223,7 +223,7 @@ class Benana_Automation_Shortcodes {
                 $raw = rgar( $entry, $clean );
                 $val = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
                 if ( '' !== trim( wp_strip_all_tags( (string) $val ) ) ) {
-                    return $val;
+                    return $this->decode_unicode_literals( $val );
                 }
             }
         }
@@ -232,15 +232,31 @@ class Benana_Automation_Shortcodes {
             $merge_tag = '{' . $clean . '}';
             $val       = GFCommon::replace_variables( $merge_tag, $form, $entry, false, false, false, 'html' );
             if ( $val !== $merge_tag ) {
-                return $val;
+                return $this->decode_unicode_literals( $val );
             }
         }
 
         if ( isset( $display_map[ $clean ] ) ) {
-            return $display_map[ $clean ];
+            return $this->decode_unicode_literals( $display_map[ $clean ] );
         }
 
         return '';
+    }
+
+    private function decode_unicode_literals( $value ) {
+        if ( is_array( $value ) ) {
+            return array_map( array( $this, 'decode_unicode_literals' ), $value );
+        }
+
+        if ( is_string( $value ) && preg_match( '/\\\u[0-9a-fA-F]{4}/', $value ) ) {
+            $prepared = '"' . str_replace( array( '\\', '"' ), array( '\\\\', '\"' ), $value ) . '"';
+            $decoded  = json_decode( $prepared );
+            if ( is_string( $decoded ) ) {
+                return $decoded;
+            }
+        }
+
+        return $value;
     }
 
     private function resolve_field_label( $token, $form, $label_map = array() ) {

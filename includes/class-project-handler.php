@@ -244,7 +244,8 @@ class Benana_Automation_Project_Handler {
                     'entry'   => $clean_entry,
                     'display' => $display,
                     'labels'  => $labels,
-                )
+                ),
+                JSON_UNESCAPED_UNICODE
             )
         );
     }

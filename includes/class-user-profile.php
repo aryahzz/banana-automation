@@ -61,7 +61,7 @@ class Benana_Automation_User_Profile {
                 <th>وضعیت فعالیت</th>
                 <td class="benana-availability">
                     <label class="benana-radio">
-                        <input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال (پیش‌فرض)
+                        <input type="radio" name="user_is_active" value="1" <?php checked( $is_active, '1' ); ?> /> فعال
                     </label>
                     <label class="benana-radio">
                         <input type="radio" name="user_is_active" value="0" <?php checked( $is_active, '0' ); ?> /> غیرفعال موقت

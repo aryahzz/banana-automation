@@ -1,0 +1,9 @@
+body, .benana-admin, .benana-inbox, .benana-history {
+    direction: rtl;
+    text-align: right;
+}
+
+.benana-card {
+    display: flex;
+    flex-direction: column;
+}

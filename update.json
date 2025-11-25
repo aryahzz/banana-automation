@@ -1,0 +1,7 @@
+{
+  "version": "1.3.9",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- امکان بارگذاری فایل توسط اساینی و پیوست مستقیم به فیلد آپلود Gravity Forms\n- ذخیره اسنپ‌شات ورودی پس از آپلود و به‌روزرسانی وضعیت پروژه به file_uploaded\n- پیام‌های موفقیت/خطا برای بارگذاری و ارتقا نسخه افزونه"
+}

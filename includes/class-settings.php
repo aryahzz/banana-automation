@@ -57,7 +57,7 @@ class Benana_Automation_Settings {
         </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
-                <p class="description">فیلدهای قبل از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
+                <p class="description">«فیلدهای قبل از قبول» را با ویرگول جدا کنید و می‌توانید هر دو فرمت را وارد کنید: <code>3,4,5</code> یا <code>{input_3},{Field:4},{3.1}</code>. مقادیر در لحظه ارسال فرم ذخیره می‌شوند تا در صفحه پروژه بدون وابستگی به مرج‌تگ‌های سراسری نمایش داده شوند.</p>
                 <table class="form-table" id="benana-gf-table">
                     <thead>
                         <tr>

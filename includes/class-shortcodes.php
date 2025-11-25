@@ -103,8 +103,9 @@ class Benana_Automation_Shortcodes {
             return '<p>دسترسی به این پروژه ندارید.</p>';
         }
 
-        $entry    = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
-        $form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+        $entry         = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
+        $snapshot      = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
+        $form_id       = get_post_meta( $project_id, 'gf_form_id', true );
 
         if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
             $form_id = $entry['form_id'];
@@ -122,14 +123,14 @@ class Benana_Automation_Shortcodes {
         $render_fields  = array();
 
         foreach ( $fields['before'] as $field_key ) {
-            $value = $this->resolve_field_value( $field_key, $entry, $form );
+            $value = $this->resolve_field_value( $field_key, $entry, $form, $snapshot['display'] );
             if ( $this->is_empty_value( $value ) ) {
                 continue;
             }
 
             $render_fields[] = array(
                 'key'   => $field_key,
-                'label' => $this->resolve_field_label( $field_key, $form ),
+                'label' => $this->resolve_field_label( $field_key, $form, $snapshot['labels'] ),
                 'value' => $value,
             );
         }
@@ -145,14 +146,14 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                $value = $this->resolve_field_value( $fid, $entry, $form );
+                $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
                 if ( $this->is_empty_value( $value ) ) {
                     continue;
                 }
 
                 $render_fields[] = array(
                     'key'   => $fid,
-                    'label' => $this->resolve_field_label( $fid, $form ),
+                    'label' => $this->resolve_field_label( $fid, $form, $snapshot['labels'] ),
                     'value' => $value,
                 );
             }
@@ -168,6 +169,7 @@ class Benana_Automation_Shortcodes {
             'province'      => get_post_meta( $project_id, 'project_province_id', true ),
             'city'          => get_post_meta( $project_id, 'project_city_id', true ),
             'nonce'         => wp_create_nonce( 'benana_action_' . $project_id ),
+            'snapshot'      => $snapshot,
         );
 
         ob_start();
@@ -207,7 +209,7 @@ class Benana_Automation_Shortcodes {
         return '' === trim( wp_strip_all_tags( (string) $value ) );
     }
 
-    private function resolve_field_value( $token, $entry, $form ) {
+    private function resolve_field_value( $token, $entry, $form, $display_map = array() ) {
         $clean = trim( $token, '{}' );
 
         // Direct entry value first (supports 1.3 style sub-inputs).
@@ -234,11 +236,20 @@ class Benana_Automation_Shortcodes {
             }
         }
 
+        if ( isset( $display_map[ $clean ] ) ) {
+            return $display_map[ $clean ];
+        }
+
         return '';
     }
 
-    private function resolve_field_label( $token, $form ) {
+    private function resolve_field_label( $token, $form, $label_map = array() ) {
         $field_id = trim( $token, '{}' );
+
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
+        }
+
         if ( is_numeric( $field_id ) && ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );

@@ -178,9 +178,75 @@ class Benana_Automation_Project_Handler {
     public static function get_entry_for_project( $project_id ) {
         $entry_id = get_post_meta( $project_id, 'gf_entry_id', true );
         if ( function_exists( 'GFAPI' ) && ! empty( $entry_id ) ) {
-            return GFAPI::get_entry( $entry_id );
+            $entry = GFAPI::get_entry( $entry_id );
+            if ( ! is_wp_error( $entry ) && ! empty( $entry ) ) {
+                return $entry;
+            }
         }
-        return array();
+        $snapshot = self::get_entry_snapshot( $project_id );
+        return $snapshot['entry'];
+    }
+
+    public static function get_entry_snapshot( $project_id ) {
+        $raw = get_post_meta( $project_id, 'gf_entry_snapshot', true );
+        $decoded = json_decode( $raw, true );
+        if ( ! is_array( $decoded ) ) {
+            $decoded = array();
+        }
+        return array(
+            'entry'   => isset( $decoded['entry'] ) && is_array( $decoded['entry'] ) ? $decoded['entry'] : array(),
+            'display' => isset( $decoded['display'] ) && is_array( $decoded['display'] ) ? $decoded['display'] : array(),
+            'labels'  => isset( $decoded['labels'] ) && is_array( $decoded['labels'] ) ? $decoded['labels'] : array(),
+        );
+    }
+
+    public static function store_entry_snapshot( $project_id, $form, $entry ) {
+        if ( empty( $project_id ) || empty( $entry ) ) {
+            return;
+        }
+
+        $clean_entry = array();
+        foreach ( $entry as $key => $value ) {
+            if ( is_array( $value ) ) {
+                $clean_entry[ $key ] = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $value ) );
+            } else {
+                $clean_entry[ $key ] = sanitize_text_field( wp_unslash( $value ) );
+            }
+        }
+
+        $display = array();
+        $labels  = array();
+
+        if ( ! empty( $form['fields'] ) && class_exists( 'GFCommon' ) ) {
+            foreach ( $form['fields'] as $field ) {
+                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+                if ( '' === $fid ) {
+                    continue;
+                }
+
+                $raw        = rgar( $entry, $fid );
+                $displayed  = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
+                $labels[ $fid ] = is_object( $field ) ? $field->label : ( $field['label'] ?? $fid );
+
+                if ( '' === trim( wp_strip_all_tags( (string) $displayed ) ) ) {
+                    $displayed = is_array( $raw ) ? implode( ', ', array_filter( array_map( 'trim', (array) $raw ) ) ) : $raw;
+                }
+
+                $display[ $fid ] = $displayed;
+            }
+        }
+
+        update_post_meta(
+            $project_id,
+            'gf_entry_snapshot',
+            wp_json_encode(
+                array(
+                    'entry'   => $clean_entry,
+                    'display' => $display,
+                    'labels'  => $labels,
+                )
+            )
+        );
     }
 
     private static function send_acceptance_sms( $project_id, $user_id, $entry ) {

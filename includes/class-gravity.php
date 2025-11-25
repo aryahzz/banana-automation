@@ -81,6 +81,8 @@ class Benana_Automation_Gravity {
         update_post_meta( $project_id, 'client_mobile', rgar( $entry, $mobile_field ) );
         update_post_meta( $project_id, 'timestamps', wp_json_encode( array( 'created' => current_time( 'mysql' ) ) ) );
 
+        Benana_Automation_Project_Handler::store_entry_snapshot( $project_id, $form, $entry );
+
         foreach ( $assigned_users as $user_id ) {
             Benana_Automation_Project_Handler::send_assignment_sms( $project_id, $user_id, $entry );
         }

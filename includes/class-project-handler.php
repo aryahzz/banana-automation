@@ -98,6 +98,9 @@ class Benana_Automation_Project_Handler {
         }
         update_post_meta( $project_id, 'accepted_by', $user_id );
         update_post_meta( $project_id, 'project_status', 'accepted' );
+
+        // پس از پذیرش، تنها همان کاربر به‌عنوان اساینی باقی می‌ماند.
+        update_post_meta( $project_id, 'assigned_users', wp_json_encode( array( intval( $user_id ) ) ) );
         $entry = self::get_entry_for_project( $project_id );
         self::send_acceptance_sms( $project_id, $user_id, $entry );
         return true;

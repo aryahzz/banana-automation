@@ -5,6 +5,20 @@
         <span>موقعیت: <?php echo esc_html( Benana_Automation_Address::get_city_name( $view['province'], $view['city'] ) ); ?></span>
     </div>
 
+    <?php if ( ! empty( $view['action_msg'] ) ) : ?>
+        <div class="benana-alert success">
+            <?php
+            if ( 'accepted' === $view['action_msg'] ) {
+                echo 'پروژه با موفقیت پذیرفته شد.';
+            } elseif ( 'rejected' === $view['action_msg'] ) {
+                echo 'پروژه رد شد.';
+            } elseif ( 'completed' === $view['action_msg'] ) {
+                echo 'پروژه به اتمام رسید.';
+            }
+            ?>
+        </div>
+    <?php endif; ?>
+
     <div class="benana-actions">
         <?php if ( 'accepted' !== $view['status'] ) : ?>
             <form method="post" class="benana-inline-form">

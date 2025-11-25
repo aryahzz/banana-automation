@@ -6,7 +6,7 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
-        add_action( 'init', array( $this, 'handle_actions' ) );
+        add_action( 'template_redirect', array( $this, 'handle_actions' ) );
     }
 
     public function handle_actions() {
@@ -36,12 +36,23 @@ class Benana_Automation_Shortcodes {
             Benana_Automation_Project_Handler::complete_project( $project_id );
         }
 
+        $status = 'none';
+        if ( 'accept' === $action ) {
+            $status = 'accepted';
+        } elseif ( 'reject' === $action ) {
+            $status = 'rejected';
+        } elseif ( 'complete' === $action ) {
+            $status = 'completed';
+        }
+
         $redirect = wp_get_referer();
         if ( ! $redirect ) {
             $redirect = add_query_arg( 'project_id', $project_id, home_url( '/projects/' ) );
         } else {
             $redirect = add_query_arg( 'project_id', $project_id, remove_query_arg( array( 'benana_action', '_wpnonce' ), $redirect ) );
         }
+
+        $redirect = add_query_arg( 'benana_action_status', $status, $redirect );
 
         wp_safe_redirect( $redirect );
         exit;
@@ -89,6 +100,7 @@ class Benana_Automation_Shortcodes {
         }
 
         $project_id = absint( $_GET['project_id'] ?? 0 );
+        $action_msg = sanitize_text_field( wp_unslash( $_GET['benana_action_status'] ?? '' ) );
         if ( ! $project_id ) {
             return '<p>پروژه‌ای انتخاب نشده است.</p>';
         }
@@ -170,6 +182,7 @@ class Benana_Automation_Shortcodes {
             'city'          => get_post_meta( $project_id, 'project_city_id', true ),
             'nonce'         => wp_create_nonce( 'benana_action_' . $project_id ),
             'snapshot'      => $snapshot,
+            'action_msg'    => $action_msg,
         );
 
         ob_start();

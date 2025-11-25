@@ -89,8 +89,25 @@ class Benana_Automation_User_Profile {
         if ( ! current_user_can( 'edit_user', $user_id ) ) {
             return false;
         }
-        update_user_meta( $user_id, 'user_province_id', sanitize_text_field( wp_unslash( $_POST['user_province_id'] ?? '' ) ) );
-        $city_ids = array_filter( array_map( 'sanitize_text_field', wp_unslash( $_POST['user_city_ids'] ?? array() ) ) );
+        $province_id = sanitize_text_field( wp_unslash( $_POST['user_province_id'] ?? '' ) );
+        $city_inputs = array_filter( array_map( 'sanitize_text_field', wp_unslash( $_POST['user_city_ids'] ?? array() ) ) );
+        $city_ids    = array();
+
+        foreach ( $city_inputs as $city_input ) {
+            $normalized = Benana_Automation_Address::normalize_location( $province_id, $city_input );
+
+            if ( empty( $province_id ) && ! empty( $normalized['province_id'] ) ) {
+                $province_id = $normalized['province_id'];
+            }
+
+            if ( ! empty( $normalized['city_id'] ) ) {
+                $city_ids[] = (string) $normalized['city_id'];
+            }
+        }
+
+        $city_ids = array_values( array_unique( $city_ids ) );
+
+        update_user_meta( $user_id, 'user_province_id', $province_id );
         update_user_meta( $user_id, 'user_city_ids', $city_ids );
 
         $is_active   = isset( $_POST['user_is_active'] ) ? sanitize_text_field( wp_unslash( $_POST['user_is_active'] ) ) : '1';

@@ -71,7 +71,7 @@ class Benana_Automation_Updater {
         return $info;
     }
 
-    private function get_remote_data() {
+    public function get_remote_data() {
         $settings = Benana_Automation_Settings::get_settings();
         $url      = isset( $settings['update_source'] ) ? esc_url_raw( $settings['update_source'] ) : '';
 

@@ -9,18 +9,25 @@ class Benana_Automation_Settings {
 
     public static function get_settings() {
         $defaults = array(
-            'gravity_forms' => array(),
-            'sms_templates' => array(
+            'gravity_forms'    => array(),
+            'sms_templates'    => array(
                 'assign'             => 'پروژه جدید برای شما ثبت شد. شناسه: {project_id}',
                 'accepted_assignee'  => 'پروژه {project_title} را شما پذیرفتید.',
                 'accepted_client'    => 'پروژه شما با شناسه {project_id} پذیرفته شد.',
                 'file_uploaded'      => 'فایل پروژه {project_title} بارگذاری شد: {file_url}',
                 'completed'          => 'پروژه {project_title} به پایان رسید. سپاسگزاریم.',
             ),
-            'update_source' => '',
+            'update_source'    => self::get_update_source_url(),
+            'debug_assignment' => 0,
         );
         $settings = get_option( self::OPTION_KEY, array() );
-        return wp_parse_args( $settings, $defaults );
+        $settings = wp_parse_args( $settings, $defaults );
+
+        if ( empty( $settings['update_source'] ) ) {
+            $settings['update_source'] = self::get_update_source_url();
+        }
+
+        return $settings;
     }
 
     public function register_menu() {
@@ -32,6 +39,7 @@ class Benana_Automation_Settings {
 
     public function register_settings() {
         register_setting( 'benana_automation_settings', self::OPTION_KEY, array( $this, 'sanitize_settings' ) );
+        add_action( 'admin_post_benana_manual_update_check', array( $this, 'manual_update_check' ) );
     }
 
     public function settings_page() {
@@ -39,8 +47,23 @@ class Benana_Automation_Settings {
         ?>
         <div class="wrap benana-admin">
             <h1>تنظیمات اتوماسیون پروژه‌ها</h1>
-            <form method="post" action="options.php">
+            <?php if ( isset( $_GET['benana_update_check'] ) ) : ?>
+                <?php $notice = rawurldecode( wp_unslash( $_GET['benana_update_check'] ) ); ?>
+                <div class="notice notice-info"><p><?php echo esc_html( $notice ); ?></p></div>
+            <?php endif; ?>
+            <form method="post" action="options.php" id="benana-settings-form">
                 <?php settings_fields( 'benana_automation_settings' ); ?>
+                <p>
+                    <label>
+                        <input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[debug_assignment]" value="1" <?php checked( ! empty( $settings['debug_assignment'] ), true ); ?> />
+                        فعال‌سازی لاگ دیباگ اساین (خروجی در uploads/benana-automation/assignment-debug.log)
+                    </label>
+                </p>
+                <p>
+                    <button type="submit" class="button button-primary">ذخیره تنظیمات</button>
+                    <?php wp_nonce_field( 'benana_manual_update', 'benana_manual_update_nonce' ); ?>
+                    <button type="submit" formaction="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" formmethod="post" class="button" name="benana_manual_update_check" value="1">بررسی دستی بروزرسانی</button>
+                </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
                 <p class="description">فیلدهای قبل/بعد از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
@@ -85,17 +108,6 @@ class Benana_Automation_Settings {
                 }
                 ?>
 
-                <h2>بروزرسانی افزونه</h2>
-                <p>آدرس JSON به‌روزرسانی را وارد کنید تا افزونه مستقیماً از همان منبع به‌روزرسانی شود. ساختار پیشنهادی:</p>
-                <pre>{
-    "version": "1.2.0",
-    "download_url": "https://example.com/benana-automation-projects-1.2.0.zip",
-    "requires": "6.0",
-    "tested": "6.5",
-    "changelog": "- تغییرات نسخه جدید"
-}</pre>
-                <p><input type="url" class="regular-text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[update_source]" value="<?php echo esc_attr( $settings['update_source'] ); ?>" placeholder="https://example.com/update.json" /></p>
-                <?php submit_button( 'ذخیره تنظیمات' ); ?>
             </form>
         </div>
         <?php
@@ -390,9 +402,46 @@ class Benana_Automation_Settings {
             }
         }
 
-        $clean['update_source'] = isset( $input['update_source'] ) ? esc_url_raw( $input['update_source'] ) : '';
+        $clean['update_source']    = isset( $input['update_source'] ) ? esc_url_raw( $input['update_source'] ) : self::get_update_source_url();
+        $clean['debug_assignment'] = empty( $input['debug_assignment'] ) ? 0 : 1;
 
         return $clean;
+    }
+
+    public static function get_update_source_url() {
+        return 'https://raw.githubusercontent.com/aryahzz/banana-automation/refs/heads/main/update.json';
+    }
+
+    public function manual_update_check() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'دسترسی غیرمجاز', 'benana-automation-projects' ) );
+        }
+
+        check_admin_referer( 'benana_manual_update', 'benana_manual_update_nonce' );
+
+        $updater = new Benana_Automation_Updater();
+        $remote  = $updater->get_remote_data();
+        $message = __( 'پاسخی دریافت نشد.', 'benana-automation-projects' );
+
+        if ( $remote && isset( $remote['version'] ) ) {
+            if ( version_compare( BENANA_AUTOMATION_VERSION, $remote['version'], '>=' ) ) {
+                $message = sprintf( __( 'نسخه شما (%1$s) به‌روز است.', 'benana-automation-projects' ), BENANA_AUTOMATION_VERSION );
+            } else {
+                $message = sprintf( __( 'نسخه جدید %1$s در دسترس است. لینک دانلود: %2$s', 'benana-automation-projects' ), $remote['version'], isset( $remote['download_url'] ) ? esc_url_raw( $remote['download_url'] ) : '' );
+            }
+        }
+
+        $redirect = add_query_arg(
+            array(
+                'page'                => 'benana-automation-projects',
+                'benana_update_check' => rawurlencode( $message ),
+                'settings-updated'    => 'true',
+            ),
+            admin_url( 'admin.php' )
+        );
+
+        wp_safe_redirect( $redirect );
+        exit;
     }
 
     private function sanitize_comma_separated( $value ) {

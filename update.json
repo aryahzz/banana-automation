@@ -1,0 +1,7 @@
+{
+  "version": "1.3.13",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- بارگذاری شرطی استایل و اسکریپت فقط در صفحات لازم و کاهش انتقال داده شهرها\n- سبک‌سازی پنل مدیریت با جلوگیری از لود در همه صفحات ادمین\n- هماهنگی نسخه با بهینه‌سازی جدید"
+}

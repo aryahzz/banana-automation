@@ -1,0 +1,16 @@
+.benana-admin h1 {
+    font-family: 'Vazirmatn', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.benana-admin table th,
+.benana-admin table td {
+    text-align: right;
+}
+
+.benana-admin textarea,
+.benana-admin input,
+.benana-admin select {
+    width: 100%;
+}

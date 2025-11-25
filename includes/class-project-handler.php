@@ -118,7 +118,15 @@ class Benana_Automation_Project_Handler {
         if ( get_post_meta( $project_id, 'accepted_by', true ) != $user_id ) {
             return false;
         }
-        update_post_meta( $project_id, 'file_url', esc_url_raw( $file_url ) );
+        $urls = is_array( $file_url ) ? array_values( array_filter( $file_url ) ) : array( $file_url );
+        $urls = array_map( 'esc_url_raw', array_filter( $urls ) );
+
+        if ( empty( $urls ) ) {
+            return false;
+        }
+
+        update_post_meta( $project_id, 'file_url', $urls[0] );
+        update_post_meta( $project_id, 'file_urls', wp_json_encode( $urls ) );
         update_post_meta( $project_id, 'project_status', 'file_uploaded' );
         $entry = self::get_entry_for_project( $project_id );
         self::send_file_uploaded_sms( $project_id, $user_id, $entry );
@@ -162,6 +170,11 @@ class Benana_Automation_Project_Handler {
         $city_name   = Benana_Automation_Address::get_city_name( $province_id, $city_id );
         $provinces   = Benana_Automation_Address::get_provinces();
         $project     = get_post( $project_id );
+        $file_urls   = json_decode( get_post_meta( $project_id, 'file_urls', true ), true );
+        if ( ! is_array( $file_urls ) ) {
+            $file_urls = array_filter( array( get_post_meta( $project_id, 'file_url', true ) ) );
+        }
+
         return array(
             'project_id'       => $project_id,
             'project_title'    => $project ? $project->post_title : '',
@@ -169,7 +182,7 @@ class Benana_Automation_Project_Handler {
             'project_city'     => $city_name,
             'project_province' => isset( $provinces[ $province_id ] ) ? $provinces[ $province_id ] : '',
             'project_url'      => get_permalink( $project_id ),
-            'file_url'         => get_post_meta( $project_id, 'file_url', true ),
+            'file_url'         => ! empty( $file_urls ) ? $file_urls[0] : '',
             'assignee_name'    => get_user_by( 'id', $user_id )->display_name,
             'assignee_mobile'  => get_user_meta( $user_id, 'mobile', true ),
             'client_name'      => get_post_meta( $project_id, 'client_user_id', true ),
@@ -180,7 +193,7 @@ class Benana_Automation_Project_Handler {
 
     public static function get_entry_for_project( $project_id ) {
         $entry_id = get_post_meta( $project_id, 'gf_entry_id', true );
-        if ( function_exists( 'GFAPI' ) && ! empty( $entry_id ) ) {
+        if ( class_exists( 'GFAPI' ) && ! empty( $entry_id ) ) {
             $entry = GFAPI::get_entry( $entry_id );
             if ( ! is_wp_error( $entry ) && ! empty( $entry ) ) {
                 return $entry;

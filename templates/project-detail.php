@@ -6,7 +6,7 @@
     </div>
 
     <?php if ( ! empty( $view['action_msg'] ) ) : ?>
-        <div class="benana-alert success">
+        <div class="benana-alert <?php echo ( 'uploaded' === $view['action_msg'] || 'accepted' === $view['action_msg'] ) ? 'success' : 'warning'; ?>">
             <?php
             if ( 'accepted' === $view['action_msg'] ) {
                 echo 'پروژه با موفقیت پذیرفته شد.';
@@ -14,6 +14,14 @@
                 echo 'پروژه رد شد.';
             } elseif ( 'completed' === $view['action_msg'] ) {
                 echo 'پروژه به اتمام رسید.';
+            } elseif ( 'uploaded' === $view['action_msg'] ) {
+                echo 'فایل با موفقیت ثبت و به ورودی پیوست شد.';
+            } elseif ( 'upload_failed' === $view['action_msg'] ) {
+                echo 'بارگذاری فایل انجام نشد.';
+            }
+
+            if ( ! empty( $view['action_text'] ) ) {
+                echo ' ' . esc_html( $view['action_text'] );
             }
             ?>
         </div>
@@ -43,6 +51,21 @@
             </form>
         <?php endif; ?>
     </div>
+
+    <?php if ( in_array( $view['status'], array( 'accepted', 'file_uploaded' ), true ) ) : ?>
+        <div class="benana-upload-box">
+            <h4>بارگذاری فایل پروژه</h4>
+            <p class="description">فایل یا فایل‌های پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ); ?>) پیوست شود و در ورود Gravity Forms ذخیره گردد.</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
+                <input type="hidden" name="benana_action" value="upload_file" />
+                <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
+                <input type="file" name="benana_project_files[]" multiple />
+                <p class="description">پس از انتخاب فایل، روی «ارسال فایل» کلیک کنید تا به ورودی شماره <?php echo esc_html( $view['entry_id'] ); ?> افزوده شود.</p>
+                <button type="submit" class="button">ارسال فایل</button>
+            </form>
+        </div>
+    <?php endif; ?>
 
     <?php if ( ! empty( $view['fields'] ) ) : ?>
         <div class="benana-entry-fields">

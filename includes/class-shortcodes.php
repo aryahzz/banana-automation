@@ -26,23 +26,25 @@ class Benana_Automation_Shortcodes {
             return;
         }
 
+        $status  = 'none';
+        $message = '';
+
         if ( $action === 'accept' ) {
             Benana_Automation_Project_Handler::accept_project( $project_id, $user_id );
+            $status = 'accepted';
         }
         if ( $action === 'reject' ) {
             Benana_Automation_Project_Handler::reject_project( $project_id, $user_id );
+            $status = 'rejected';
         }
         if ( $action === 'complete' ) {
             Benana_Automation_Project_Handler::complete_project( $project_id );
-        }
-
-        $status = 'none';
-        if ( 'accept' === $action ) {
-            $status = 'accepted';
-        } elseif ( 'reject' === $action ) {
-            $status = 'rejected';
-        } elseif ( 'complete' === $action ) {
             $status = 'completed';
+        }
+        if ( 'upload_file' === $action ) {
+            $upload_result = $this->handle_file_upload( $project_id, $user_id );
+            $status        = $upload_result['status'];
+            $message       = $upload_result['message'];
         }
 
         $redirect = wp_get_referer();
@@ -53,9 +55,121 @@ class Benana_Automation_Shortcodes {
         }
 
         $redirect = add_query_arg( 'benana_action_status', $status, $redirect );
+        if ( ! empty( $message ) ) {
+            $redirect = add_query_arg( 'benana_action_message', rawurlencode( $message ), $redirect );
+        }
 
         wp_safe_redirect( $redirect );
         exit;
+    }
+
+    private function handle_file_upload( $project_id, $user_id ) {
+        $result = array(
+            'status'  => 'upload_failed',
+            'message' => '',
+        );
+
+        $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) );
+        if ( $accepted !== intval( $user_id ) ) {
+            $result['message'] = 'فقط کاربر پذیرفته‌کننده می‌تواند فایل بارگذاری کند.';
+            return $result;
+        }
+
+        if ( empty( $_FILES['benana_project_files'] ) || empty( $_FILES['benana_project_files']['name'] ) ) {
+            $result['message'] = 'هیچ فایلی انتخاب نشده است.';
+            return $result;
+        }
+
+        $form_id  = absint( get_post_meta( $project_id, 'gf_form_id', true ) );
+        $entry_id = absint( get_post_meta( $project_id, 'gf_entry_id', true ) );
+        $settings = Benana_Automation_Settings::get_settings();
+        $upload_field = $settings['gravity_forms'][ $form_id ]['upload_field'] ?? '';
+
+        if ( empty( $upload_field ) ) {
+            $result['message'] = 'شناسه فیلد آپلود در تنظیمات فرم تعیین نشده است.';
+            return $result;
+        }
+
+        if ( ! function_exists( 'wp_handle_upload' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+
+        $files           = $_FILES['benana_project_files'];
+        $uploaded_urls   = array();
+        $upload_errors   = array();
+        $upload_overrides = array( 'test_form' => false );
+
+        if ( is_array( $files['name'] ) ) {
+            foreach ( $files['name'] as $index => $name ) {
+                if ( empty( $name ) ) {
+                    continue;
+                }
+                $file_array = array(
+                    'name'     => $name,
+                    'type'     => $files['type'][ $index ] ?? '',
+                    'tmp_name' => $files['tmp_name'][ $index ] ?? '',
+                    'error'    => $files['error'][ $index ] ?? 0,
+                    'size'     => $files['size'][ $index ] ?? 0,
+                );
+                $movefile = wp_handle_upload( $file_array, $upload_overrides );
+                if ( isset( $movefile['url'] ) ) {
+                    $uploaded_urls[] = $movefile['url'];
+                } elseif ( isset( $movefile['error'] ) ) {
+                    $upload_errors[] = $movefile['error'];
+                }
+            }
+        } else {
+            $movefile = wp_handle_upload( $files, $upload_overrides );
+            if ( isset( $movefile['url'] ) ) {
+                $uploaded_urls[] = $movefile['url'];
+            } elseif ( isset( $movefile['error'] ) ) {
+                $upload_errors[] = $movefile['error'];
+            }
+        }
+
+        if ( empty( $uploaded_urls ) ) {
+            $result['message'] = ! empty( $upload_errors ) ? implode( ' / ', $upload_errors ) : 'بارگذاری فایل انجام نشد.';
+            return $result;
+        }
+
+        $entry = array();
+        if ( class_exists( 'GFAPI' ) && $entry_id ) {
+            $entry = GFAPI::get_entry( $entry_id );
+            if ( is_wp_error( $entry ) ) {
+                $entry = array();
+            }
+        }
+
+        $form = array();
+        if ( class_exists( 'GFAPI' ) && $form_id ) {
+            $form = GFAPI::get_form( $form_id );
+            if ( is_wp_error( $form ) ) {
+                $form = array();
+            }
+        }
+
+        $value = count( $uploaded_urls ) > 1 ? wp_json_encode( $uploaded_urls ) : $uploaded_urls[0];
+
+        $snapshot    = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
+        $entry_merge = array_merge( $snapshot['entry'], $entry );
+        $entry_merge[ $upload_field ] = $value;
+
+        if ( ! empty( $entry ) && class_exists( 'GFAPI' ) ) {
+            $entry[ $upload_field ] = $value;
+            $update_result          = GFAPI::update_entry( $entry );
+            if ( is_wp_error( $update_result ) ) {
+                $result['message'] = $update_result->get_error_message();
+                return $result;
+            }
+        }
+
+        Benana_Automation_Project_Handler::store_entry_snapshot( $project_id, $form, $entry_merge );
+        Benana_Automation_Project_Handler::upload_file( $project_id, $user_id, $uploaded_urls );
+
+        $result['status']  = 'uploaded';
+        $result['message'] = 'فایل با موفقیت پیوست شد.';
+
+        return $result;
     }
 
     public function inbox_shortcode( $atts ) {
@@ -101,6 +215,7 @@ class Benana_Automation_Shortcodes {
 
         $project_id = absint( $_GET['project_id'] ?? 0 );
         $action_msg = sanitize_text_field( wp_unslash( $_GET['benana_action_status'] ?? '' ) );
+        $action_txt = sanitize_text_field( wp_unslash( $_GET['benana_action_message'] ?? '' ) );
         if ( ! $project_id ) {
             return '<p>پروژه‌ای انتخاب نشده است.</p>';
         }
@@ -183,6 +298,9 @@ class Benana_Automation_Shortcodes {
             'nonce'         => wp_create_nonce( 'benana_action_' . $project_id ),
             'snapshot'      => $snapshot,
             'action_msg'    => $action_msg,
+            'action_text'   => $action_txt,
+            'upload_field'  => $settings['gravity_forms'][ $form_id ]['upload_field'] ?? '',
+            'entry_id'      => get_post_meta( $project_id, 'gf_entry_id', true ),
         );
 
         ob_start();

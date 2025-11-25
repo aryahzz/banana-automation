@@ -1,0 +1,73 @@
+.benana-inbox, .benana-history, .benana-stats {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.benana-card {
+    border: 1px solid #ddd;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.benana-filter {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.benana-filter input[type="text"] {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.benana-card .meta {
+    color: #666;
+    font-size: 13px;
+    margin: 4px 0;
+}
+
+.benana-actions a {
+    margin-left: 8px;
+}
+
+.benana-city-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    border: 1px solid #e5e5e5;
+    padding: 8px;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.benana-city-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.benana-availability-form {
+    border: 1px solid #e5e5e5;
+    padding: 16px;
+    border-radius: 10px;
+    background: #fafafa;
+    margin-bottom: 16px;
+}
+
+.benana-availability-form .benana-inactive-options {
+    margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+    .benana-card {
+        display: block;
+    }
+}

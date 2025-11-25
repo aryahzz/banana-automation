@@ -30,32 +30,15 @@
         <?php endif; ?>
     </div>
 
-    <?php
-    $fields_to_show = $view['accepted'] ? array_merge( $view['fields']['before'], $view['fields']['after'] ) : $view['fields']['before'];
-    if ( ! empty( $fields_to_show ) && is_array( $view['entry'] ) ) :
-        ?>
+    <?php if ( ! empty( $view['fields'] ) ) : ?>
         <div class="benana-entry-fields">
             <h4>جزئیات فرم</h4>
             <?php
-            foreach ( $fields_to_show as $field_key ) {
-                $value = isset( $view['entry'][ $field_key ] ) ? $view['entry'][ $field_key ] : '';
-                $label = $field_key;
-                if ( ! empty( $view['form']['fields'] ) ) {
-                    foreach ( $view['form']['fields'] as $field ) {
-                        $field_id    = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
-                        $field_label = is_object( $field ) ? $field->label : ( $field['label'] ?? '' );
-                        if ( (string) $field_id === (string) $field_key ) {
-                            $label = $field_label;
-                            break;
-                        }
-                    }
-                }
-                if ( is_array( $value ) ) {
-                    $value = implode( '، ', $value );
-                }
+            foreach ( $view['fields'] as $field ) {
+                $value = is_array( $field['value'] ) ? implode( '، ', (array) $field['value'] ) : $field['value'];
                 ?>
                 <div class="benana-field">
-                    <strong><?php echo esc_html( $label ); ?></strong>
+                    <strong><?php echo esc_html( $field['label'] ); ?></strong>
                     <div><?php echo esc_html( $value ); ?></div>
                 </div>
                 <?php

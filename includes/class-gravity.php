@@ -17,6 +17,10 @@ class Benana_Automation_Gravity {
     }
 
     public function handle_payment_complete( $entry, $action ) {
+        if ( isset( $action['is_success'] ) && ! $action['is_success'] ) {
+            return;
+        }
+
         $form = function_exists( 'GFAPI' ) ? GFAPI::get_form( rgar( $entry, 'form_id' ) ) : array();
         $this->maybe_create_project( $entry, $form, true );
     }

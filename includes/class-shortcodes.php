@@ -36,7 +36,14 @@ class Benana_Automation_Shortcodes {
             Benana_Automation_Project_Handler::complete_project( $project_id );
         }
 
-        wp_safe_redirect( remove_query_arg( array( 'benana_action', 'project_id' ) ) );
+        $redirect = wp_get_referer();
+        if ( ! $redirect ) {
+            $redirect = add_query_arg( 'project_id', $project_id, home_url( '/projects/' ) );
+        } else {
+            $redirect = add_query_arg( 'project_id', $project_id, remove_query_arg( array( 'benana_action', '_wpnonce' ), $redirect ) );
+        }
+
+        wp_safe_redirect( $redirect );
         exit;
     }
 
@@ -107,12 +114,13 @@ class Benana_Automation_Shortcodes {
             $fields['after']  = $this->parse_field_list( $gf_settings['after_accept'] ?? '' );
         }
 
-        $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
+        $accepted     = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
         $after_filled = array();
 
         if ( $accepted ) {
             foreach ( $fields['after'] as $field_key ) {
-                $value = isset( $entry[ $field_key ] ) ? $entry[ $field_key ] : '';
+                $value = $this->resolve_field_value( $field_key, $entry, $form );
+
                 if ( is_array( $value ) ) {
                     $value = array_filter( array_map( 'strval', $value ), function( $item ) {
                         return '' !== trim( $item );
@@ -125,19 +133,27 @@ class Benana_Automation_Shortcodes {
             }
         }
 
+        $fields_to_show = $accepted ? array_merge( $fields['before'], $after_filled ) : $fields['before'];
+        $render_fields  = array();
+
+        foreach ( $fields_to_show as $field_key ) {
+            $render_fields[] = array(
+                'key'   => $field_key,
+                'label' => $this->resolve_field_label( $field_key, $form ),
+                'value' => $this->resolve_field_value( $field_key, $entry, $form ),
+            );
+        }
+
         $view = array(
-            'project'   => $project,
-            'status'    => get_post_meta( $project_id, 'project_status', true ),
-            'entry'     => $entry,
-            'form'      => $form,
-            'fields'    => array(
-                'before' => $fields['before'],
-                'after'  => $after_filled,
-            ),
-            'accepted'  => $accepted,
-            'province'  => get_post_meta( $project_id, 'project_province_id', true ),
-            'city'      => get_post_meta( $project_id, 'project_city_id', true ),
-            'nonce'     => wp_create_nonce( 'benana_action_' . $project_id ),
+            'project'       => $project,
+            'status'        => get_post_meta( $project_id, 'project_status', true ),
+            'entry'         => $entry,
+            'form'          => $form,
+            'fields'        => $render_fields,
+            'accepted'      => $accepted,
+            'province'      => get_post_meta( $project_id, 'project_province_id', true ),
+            'city'          => get_post_meta( $project_id, 'project_city_id', true ),
+            'nonce'         => wp_create_nonce( 'benana_action_' . $project_id ),
         );
 
         ob_start();
@@ -152,10 +168,45 @@ class Benana_Automation_Shortcodes {
             if ( empty( $item ) ) {
                 continue;
             }
-            $items[] = trim( $item, '{}' );
+
+            $item = trim( $item, '{}' );
+
+            if ( preg_match( '/^gf_(.+)$/i', $item, $m ) ) {
+                $item = $m[1];
+            }
+
+            if ( preg_match( '/(.+):(\d+(?:\.\d+)?)/', $item, $m ) ) {
+                $item = $m[2];
+            }
+
+            $items[] = $item;
         }
 
         return $items;
+    }
+
+    private function resolve_field_value( $token, $entry, $form ) {
+        $clean = trim( $token, '{}' );
+        if ( class_exists( 'GFCommon' ) && ! empty( $form ) ) {
+            $merge_tag = '{' . $clean . '}';
+            return GFCommon::replace_variables( $merge_tag, $form, $entry, false, false, false, 'html' );
+        }
+
+        return isset( $entry[ $clean ] ) ? $entry[ $clean ] : '';
+    }
+
+    private function resolve_field_label( $token, $form ) {
+        $field_id = trim( $token, '{}' );
+        if ( is_numeric( $field_id ) && ! empty( $form['fields'] ) ) {
+            foreach ( $form['fields'] as $field ) {
+                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+                if ( (string) $fid === (string) $field_id ) {
+                    return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
+                }
+            }
+        }
+
+        return $field_id;
     }
 
     public function history_shortcode() {

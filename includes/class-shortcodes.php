@@ -80,10 +80,11 @@ class Benana_Automation_Shortcodes {
             return $result;
         }
 
-        $form_id  = absint( get_post_meta( $project_id, 'gf_form_id', true ) );
-        $entry_id = absint( get_post_meta( $project_id, 'gf_entry_id', true ) );
-        $settings = Benana_Automation_Settings::get_settings();
-        $upload_field = $settings['gravity_forms'][ $form_id ]['upload_field'] ?? '';
+        $form_id     = absint( get_post_meta( $project_id, 'gf_form_id', true ) );
+        $entry_id    = absint( get_post_meta( $project_id, 'gf_entry_id', true ) );
+        $settings    = Benana_Automation_Settings::get_settings();
+        $form_config = $settings['gravity_forms'][ $form_id ] ?? array();
+        $upload_field = $form_config['file_field'] ?? ( $form_config['upload_field'] ?? '' );
 
         if ( empty( $upload_field ) ) {
             $result['message'] = 'شناسه فیلد آپلود در تنظیمات فرم تعیین نشده است.';
@@ -299,7 +300,7 @@ class Benana_Automation_Shortcodes {
             'snapshot'      => $snapshot,
             'action_msg'    => $action_msg,
             'action_text'   => $action_txt,
-            'upload_field'  => $settings['gravity_forms'][ $form_id ]['upload_field'] ?? '',
+            'upload_field'  => $upload_field,
             'entry_id'      => get_post_meta( $project_id, 'gf_entry_id', true ),
         );
 

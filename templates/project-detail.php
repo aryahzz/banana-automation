@@ -55,7 +55,7 @@
     <?php if ( in_array( $view['status'], array( 'accepted', 'file_uploaded' ), true ) ) : ?>
         <div class="benana-upload-box">
             <h4>بارگذاری فایل پروژه</h4>
-            <p class="description">فایل یا فایل‌های پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ); ?>) پیوست شود و در ورود Gravity Forms ذخیره گردد.</p>
+            <p class="description">فایل یا فایل‌های پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ?: '—' ); ?>) پیوست شود و در ورود Gravity Forms ذخیره گردد.</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="upload_file" />

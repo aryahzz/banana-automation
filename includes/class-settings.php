@@ -350,8 +350,13 @@ class Benana_Automation_Settings {
             'province_field' => '',
             'mobile_field'   => '',
             'file_field'     => '',
+            'upload_field'   => '',
             'before_accept'  => '',
         );
+        // همسان‌سازی کلید قدیمی/جدید برای فیلد آپلود
+        if ( empty( $form_settings['file_field'] ) && ! empty( $form_settings['upload_field'] ) ) {
+            $form_settings['file_field'] = $form_settings['upload_field'];
+        }
         $form_settings = wp_parse_args( $form_settings, $defaults );
         $row_classes   = $is_template ? 'benana-gf-row benana-gf-template' : 'benana-gf-row';
         $disabled_attr = $is_template ? 'disabled="disabled"' : '';
@@ -382,11 +387,15 @@ class Benana_Automation_Settings {
                     continue;
                 }
 
+                $file_field = isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '';
+                $upload_fld = isset( $row['upload_field'] ) ? sanitize_text_field( $row['upload_field'] ) : $file_field;
+
                 $clean['gravity_forms'][ $form_id ] = array(
                     'city_field'     => isset( $row['city_field'] ) ? sanitize_text_field( $row['city_field'] ) : '',
                     'province_field' => isset( $row['province_field'] ) ? sanitize_text_field( $row['province_field'] ) : '',
                     'mobile_field'   => isset( $row['mobile_field'] ) ? sanitize_text_field( $row['mobile_field'] ) : '',
-                    'file_field'     => isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '',
+                    'file_field'     => $file_field,
+                    'upload_field'   => $upload_fld,
                     'before_accept'  => isset( $row['before_accept'] ) ? $this->sanitize_comma_separated( $row['before_accept'] ) : '',
                 );
             }

@@ -5,24 +5,39 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
+        add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
         add_action( 'init', array( $this, 'handle_actions' ) );
     }
 
     public function handle_actions() {
-        if ( isset( $_GET['benana_action'], $_GET['project_id'] ) && is_user_logged_in() ) {
-            $action     = sanitize_text_field( wp_unslash( $_GET['benana_action'] ) );
-            $project_id = absint( $_GET['project_id'] );
-            $user_id    = get_current_user_id();
-            if ( $action === 'accept' ) {
-                Benana_Automation_Project_Handler::accept_project( $project_id, $user_id );
-            }
-            if ( $action === 'reject' ) {
-                Benana_Automation_Project_Handler::reject_project( $project_id, $user_id );
-            }
-            if ( $action === 'complete' ) {
-                Benana_Automation_Project_Handler::complete_project( $project_id );
-            }
+        $action     = sanitize_text_field( wp_unslash( $_POST['benana_action'] ?? '' ) );
+        $project_id = absint( $_POST['project_id'] ?? 0 );
+        $user_id    = get_current_user_id();
+
+        if ( empty( $action ) || empty( $project_id ) || ! is_user_logged_in() ) {
+            return;
         }
+
+        if ( ! isset( $_POST['benana_action_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['benana_action_nonce'] ) ), 'benana_action_' . $project_id ) ) {
+            return;
+        }
+
+        if ( ! Benana_Automation_Project_Handler::user_is_assignee( $project_id, $user_id ) ) {
+            return;
+        }
+
+        if ( $action === 'accept' ) {
+            Benana_Automation_Project_Handler::accept_project( $project_id, $user_id );
+        }
+        if ( $action === 'reject' ) {
+            Benana_Automation_Project_Handler::reject_project( $project_id, $user_id );
+        }
+        if ( $action === 'complete' ) {
+            Benana_Automation_Project_Handler::complete_project( $project_id );
+        }
+
+        wp_safe_redirect( remove_query_arg( array( 'benana_action', 'project_id' ) ) );
+        exit;
     }
 
     public function inbox_shortcode( $atts ) {
@@ -59,6 +74,62 @@ class Benana_Automation_Shortcodes {
         ob_start();
         include BENANA_AUTOMATION_PATH . 'templates/inbox.php';
         return ob_get_clean();
+    }
+
+    public function project_detail_shortcode() {
+        if ( ! is_user_logged_in() ) {
+            return '<p>برای مشاهده پروژه ابتدا وارد شوید.</p>';
+        }
+
+        $project_id = absint( $_GET['project_id'] ?? 0 );
+        if ( ! $project_id ) {
+            return '<p>پروژه‌ای انتخاب نشده است.</p>';
+        }
+
+        $user_id = get_current_user_id();
+        if ( ! Benana_Automation_Project_Handler::user_is_assignee( $project_id, $user_id ) ) {
+            return '<p>دسترسی به این پروژه ندارید.</p>';
+        }
+
+        $entry    = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
+        $form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+        $form     = function_exists( 'GFAPI' ) ? GFAPI::get_form( $form_id ) : array();
+        $settings = Benana_Automation_Settings::get_settings();
+        $fields   = array( 'before' => array(), 'after' => array() );
+        if ( isset( $settings['gravity_forms'][ $form_id ] ) ) {
+            $gf_settings      = $settings['gravity_forms'][ $form_id ];
+            $fields['before'] = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
+            $fields['after']  = $this->parse_field_list( $gf_settings['after_accept'] ?? '' );
+        }
+
+        $view = array(
+            'project'   => get_post( $project_id ),
+            'status'    => get_post_meta( $project_id, 'project_status', true ),
+            'entry'     => $entry,
+            'form'      => $form,
+            'fields'    => $fields,
+            'accepted'  => intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id,
+            'province'  => get_post_meta( $project_id, 'project_province_id', true ),
+            'city'      => get_post_meta( $project_id, 'project_city_id', true ),
+            'nonce'     => wp_create_nonce( 'benana_action_' . $project_id ),
+        );
+
+        ob_start();
+        include BENANA_AUTOMATION_PATH . 'templates/project-detail.php';
+        return ob_get_clean();
+    }
+
+    private function parse_field_list( $raw ) {
+        $items = array();
+        foreach ( explode( ',', $raw ) as $item ) {
+            $item = trim( $item );
+            if ( empty( $item ) ) {
+                continue;
+            }
+            $items[] = trim( $item, '{}' );
+        }
+
+        return $items;
     }
 
     public function history_shortcode() {

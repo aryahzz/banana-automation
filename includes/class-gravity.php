@@ -2,15 +2,34 @@
 class Benana_Automation_Gravity {
     public function __construct() {
         add_action( 'gform_after_submission', array( $this, 'handle_submission' ), 10, 2 );
+        add_action( 'gform_post_payment_completed', array( $this, 'handle_payment_complete' ), 10, 2 );
     }
 
     public function handle_submission( $entry, $form ) {
+        $this->maybe_create_project( $entry, $form, false );
+    }
+
+    public function handle_payment_complete( $entry, $action ) {
+        $form = function_exists( 'GFAPI' ) ? GFAPI::get_form( rgar( $entry, 'form_id' ) ) : array();
+        $this->maybe_create_project( $entry, $form, true );
+    }
+
+    private function maybe_create_project( $entry, $form, $from_payment_hook = false ) {
         if ( ! function_exists( 'rgar' ) ) {
             return;
         }
+
         $settings = Benana_Automation_Settings::get_settings();
         $form_id  = rgar( $form, 'id' );
+        if ( empty( $form_id ) ) {
+            $form_id = rgar( $entry, 'form_id' );
+        }
+
         if ( empty( $settings['gravity_forms'][ $form_id ] ) ) {
+            return;
+        }
+
+        if ( $this->project_exists_for_entry( rgar( $entry, 'id' ) ) ) {
             return;
         }
 
@@ -18,7 +37,11 @@ class Benana_Automation_Gravity {
         $city_field     = $form_settings['city_field'];
         $province_field = isset( $form_settings['province_field'] ) ? $form_settings['province_field'] : '';
         $mobile_field   = $form_settings['mobile_field'];
-        $file_field     = $form_settings['file_field'];
+
+        $payment_status = rgar( $entry, 'payment_status' );
+        if ( ! $from_payment_hook && ! empty( $payment_status ) && 'Paid' !== $payment_status ) {
+            return;
+        }
 
         $city_raw     = rgar( $entry, $city_field );
         $province_raw = $province_field ? rgar( $entry, $province_field ) : '';
@@ -31,6 +54,10 @@ class Benana_Automation_Gravity {
             'post_title'  => 'پروژه جدید #' . $form_id . '-' . rgar( $entry, 'id' ),
             'post_status' => 'publish',
         ) );
+
+        if ( is_wp_error( $project_id ) ) {
+            return;
+        }
 
         $assigned_users = Benana_Automation_Project_Handler::find_assignees( $province_id, $city_id );
 
@@ -46,5 +73,21 @@ class Benana_Automation_Gravity {
         foreach ( $assigned_users as $user_id ) {
             Benana_Automation_Project_Handler::send_assignment_sms( $project_id, $user_id, $entry );
         }
+    }
+
+    private function project_exists_for_entry( $entry_id ) {
+        $query = new WP_Query( array(
+            'post_type'  => 'project',
+            'meta_query' => array(
+                array(
+                    'key'   => 'gf_entry_id',
+                    'value' => $entry_id,
+                ),
+            ),
+            'fields'     => 'ids',
+            'post_status'=> 'any',
+        ) );
+
+        return ( $query->found_posts > 0 );
     }
 }

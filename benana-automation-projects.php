@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.2.7' );
+define( 'BENANA_AUTOMATION_VERSION', '1.2.8' );
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';
@@ -37,6 +37,19 @@ class Benana_Automation_Projects {
         add_action( 'init', array( $this, 'init_classes' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_front_assets' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+    }
+
+    public static function activate() {
+        $page = get_page_by_path( 'projects' );
+        if ( ! $page ) {
+            wp_insert_post( array(
+                'post_title'   => 'پروژه‌ها',
+                'post_name'    => 'projects',
+                'post_status'  => 'publish',
+                'post_type'    => 'page',
+                'post_content' => '[project_detail]',
+            ) );
+        }
     }
 
     public function load_textdomain() {
@@ -85,3 +98,4 @@ class Benana_Automation_Projects {
 }
 
 new Benana_Automation_Projects();
+register_activation_hook( __FILE__, array( 'Benana_Automation_Projects', 'activate' ) );

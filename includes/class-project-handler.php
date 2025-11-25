@@ -112,6 +112,10 @@ class Benana_Automation_Project_Handler {
         if ( ! empty( $accepted ) ) {
             return false;
         }
+
+        if ( ! self::user_is_assignee( $project_id, $user_id ) ) {
+            return false;
+        }
         update_post_meta( $project_id, 'accepted_by', $user_id );
         update_post_meta( $project_id, 'project_status', 'accepted' );
         $entry = self::get_entry_for_project( $project_id );
@@ -143,6 +147,16 @@ class Benana_Automation_Project_Handler {
         $entry      = self::get_entry_for_project( $project_id );
         $accepted   = get_post_meta( $project_id, 'accepted_by', true );
         self::send_complete_sms( $project_id, $accepted, $entry );
+    }
+
+    public static function user_is_assignee( $project_id, $user_id ) {
+        $assigned = json_decode( get_post_meta( $project_id, 'assigned_users', true ), true );
+        if ( ! is_array( $assigned ) ) {
+            $assigned = array();
+        }
+
+        $accepted_by = get_post_meta( $project_id, 'accepted_by', true );
+        return ( in_array( $user_id, $assigned, true ) || intval( $accepted_by ) === intval( $user_id ) );
     }
 
     public static function build_context( $project_id, $user_id, $entry ) {

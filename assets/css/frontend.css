@@ -71,3 +71,35 @@
         display: block;
     }
 }
+
+.benana-project-detail {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.benana-project-detail .benana-meta span {
+    display: inline-block;
+    margin-left: 15px;
+}
+
+.benana-inline-form {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.benana-entry-fields {
+    margin-top: 20px;
+}
+
+.benana-entry-fields .benana-field {
+    padding: 10px;
+    border-bottom: 1px dashed #ddd;
+}
+
+.benana-entry-fields .benana-field strong {
+    display: block;
+    margin-bottom: 4px;
+}

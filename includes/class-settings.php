@@ -57,7 +57,7 @@ class Benana_Automation_Settings {
         </p>
                 <h2>تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
-                <p class="description">فیلدهای قبل/بعد از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
+                <p class="description">فیلدهای قبل از قبول را با ویرگول جدا کنید؛ مثال: <code>3,4,5</code> یا <code>{Field:3},{input_4}</code>.</p>
                 <table class="form-table" id="benana-gf-table">
                     <thead>
                         <tr>
@@ -67,7 +67,6 @@ class Benana_Automation_Settings {
             <th>فیلد موبایل</th>
                             <th>فیلد آپلود</th>
                             <th>فیلدهای قبل از قبول</th>
-                            <th>فیلدهای بعد از قبول</th>
                             <th>حذف</th>
                         </tr>
                     </thead>
@@ -352,7 +351,6 @@ class Benana_Automation_Settings {
             'mobile_field'   => '',
             'file_field'     => '',
             'before_accept'  => '',
-            'after_accept'   => '',
         );
         $form_settings = wp_parse_args( $form_settings, $defaults );
         $row_classes   = $is_template ? 'benana-gf-row benana-gf-template' : 'benana-gf-row';
@@ -366,7 +364,6 @@ class Benana_Automation_Settings {
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][mobile_field]" value="<?php echo esc_attr( $form_settings['mobile_field'] ); ?>" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][file_field]" value="<?php echo esc_attr( $form_settings['file_field'] ); ?>" /></td>
             <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][before_accept]" value="<?php echo esc_attr( $form_settings['before_accept'] ); ?>" placeholder="مثال: 3,4 یا {input_5}" /></td>
-            <td><input <?php echo $disabled_attr; ?> type="text" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[gravity_forms][<?php echo esc_attr( $row_key ); ?>][after_accept]" value="<?php echo esc_attr( $form_settings['after_accept'] ); ?>" placeholder="مثال: 6,7 یا {Field:8}" /></td>
             <td><button type="button" class="button benana-remove-gf" <?php echo $is_template ? 'disabled="disabled"' : ''; ?>>حذف</button></td>
         </tr>
         <?php
@@ -385,16 +382,12 @@ class Benana_Automation_Settings {
                     continue;
                 }
 
-                $before = isset( $row['before_accept'] ) ? $this->sanitize_comma_separated( $row['before_accept'] ) : '';
-                $after  = isset( $row['after_accept'] ) ? $this->sanitize_comma_separated( $row['after_accept'] ) : '';
-
                 $clean['gravity_forms'][ $form_id ] = array(
                     'city_field'     => isset( $row['city_field'] ) ? sanitize_text_field( $row['city_field'] ) : '',
                     'province_field' => isset( $row['province_field'] ) ? sanitize_text_field( $row['province_field'] ) : '',
                     'mobile_field'   => isset( $row['mobile_field'] ) ? sanitize_text_field( $row['mobile_field'] ) : '',
                     'file_field'     => isset( $row['file_field'] ) ? sanitize_text_field( $row['file_field'] ) : '',
-                    'before_accept'  => $before,
-                    'after_accept'   => $after,
+                    'before_accept'  => isset( $row['before_accept'] ) ? $this->sanitize_comma_separated( $row['before_accept'] ) : '',
                 );
             }
         }

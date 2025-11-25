@@ -105,43 +105,57 @@ class Benana_Automation_Shortcodes {
 
         $entry    = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
         $form_id  = get_post_meta( $project_id, 'gf_form_id', true );
-        $form     = function_exists( 'GFAPI' ) ? GFAPI::get_form( $form_id ) : array();
+
+        if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
+            $form_id = $entry['form_id'];
+        }
+
+        $form = ( function_exists( 'GFAPI' ) && ! empty( $form_id ) ) ? GFAPI::get_form( $form_id ) : array();
         $settings = Benana_Automation_Settings::get_settings();
-        $fields   = array( 'before' => array(), 'after' => array() );
+        $fields   = array( 'before' => array() );
         if ( isset( $settings['gravity_forms'][ $form_id ] ) ) {
             $gf_settings      = $settings['gravity_forms'][ $form_id ];
             $fields['before'] = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
-            $fields['after']  = $this->parse_field_list( $gf_settings['after_accept'] ?? '' );
         }
 
         $accepted     = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $after_filled = array();
-
-        if ( $accepted ) {
-            foreach ( $fields['after'] as $field_key ) {
-                $value = $this->resolve_field_value( $field_key, $entry, $form );
-
-                if ( is_array( $value ) ) {
-                    $value = array_filter( array_map( 'strval', $value ), function( $item ) {
-                        return '' !== trim( $item );
-                    } );
-                }
-
-                if ( '' !== trim( is_array( $value ) ? implode( '', $value ) : (string) $value ) ) {
-                    $after_filled[] = $field_key;
-                }
-            }
-        }
-
-        $fields_to_show = $accepted ? array_merge( $fields['before'], $after_filled ) : $fields['before'];
         $render_fields  = array();
 
-        foreach ( $fields_to_show as $field_key ) {
+        foreach ( $fields['before'] as $field_key ) {
+            $value = $this->resolve_field_value( $field_key, $entry, $form );
+            if ( $this->is_empty_value( $value ) ) {
+                continue;
+            }
+
             $render_fields[] = array(
                 'key'   => $field_key,
                 'label' => $this->resolve_field_label( $field_key, $form ),
-                'value' => $this->resolve_field_value( $field_key, $entry, $form ),
+                'value' => $value,
             );
+        }
+
+        if ( $accepted && ! empty( $form['fields'] ) ) {
+            foreach ( $form['fields'] as $field ) {
+                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+                if ( '' === $fid ) {
+                    continue;
+                }
+
+                if ( in_array( (string) $fid, $fields['before'], true ) ) {
+                    continue;
+                }
+
+                $value = $this->resolve_field_value( $fid, $entry, $form );
+                if ( $this->is_empty_value( $value ) ) {
+                    continue;
+                }
+
+                $render_fields[] = array(
+                    'key'   => $fid,
+                    'label' => $this->resolve_field_label( $fid, $form ),
+                    'value' => $value,
+                );
+            }
         }
 
         $view = array(
@@ -183,6 +197,14 @@ class Benana_Automation_Shortcodes {
         }
 
         return $items;
+    }
+
+    private function is_empty_value( $value ) {
+        if ( is_array( $value ) ) {
+            $value = implode( '', array_map( 'trim', $value ) );
+        }
+
+        return '' === trim( wp_strip_all_tags( (string) $value ) );
     }
 
     private function resolve_field_value( $token, $entry, $form ) {

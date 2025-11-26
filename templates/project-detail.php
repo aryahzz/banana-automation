@@ -43,12 +43,6 @@
             </form>
         <?php elseif ( 'accepted' === $view['status'] ) : ?>
             <p>این پروژه را به‌عنوان مهندس پذیرفته‌اید.</p>
-            <form method="post" class="benana-inline-form">
-                <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
-                <input type="hidden" name="benana_action" value="complete" />
-                <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
-                <button type="submit" class="button button-primary">اتمام پروژه</button>
-            </form>
         <?php endif; ?>
     </div>
 

@@ -38,10 +38,6 @@ class Benana_Automation_Shortcodes {
             Benana_Automation_Project_Handler::reject_project( $project_id, $user_id );
             $status = 'rejected';
         }
-        if ( $action === 'complete' && in_array( $project_status, array( 'accepted', 'file_uploaded' ), true ) ) {
-            Benana_Automation_Project_Handler::complete_project( $project_id );
-            $status = 'completed';
-        }
         if ( 'upload_file' === $action && 'accepted' === $project_status ) {
             $upload_result = $this->handle_file_upload( $project_id, $user_id );
             $status        = $upload_result['status'];
@@ -72,7 +68,7 @@ class Benana_Automation_Shortcodes {
 
         $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) );
         if ( $accepted !== intval( $user_id ) ) {
-            $result['message'] = 'فقط مهندسی که پذیرفته‌ می‌تواند فایل بارگذاری کند.';
+            $result['message'] = 'فقط مهندس پذیرفته‌کننده می‌تواند فایل بارگذاری کند.';
             return $result;
         }
 
@@ -101,6 +97,9 @@ class Benana_Automation_Shortcodes {
         $upload_errors   = array();
         $upload_overrides = array( 'test_form' => false );
 
+        $this->ensure_custom_upload_dir();
+        add_filter( 'upload_dir', array( $this, 'custom_upload_dir' ) );
+
         if ( is_array( $files['name'] ) ) {
             foreach ( $files['name'] as $index => $name ) {
                 if ( empty( $name ) ) {
@@ -128,6 +127,8 @@ class Benana_Automation_Shortcodes {
                 $upload_errors[] = $movefile['error'];
             }
         }
+
+        remove_filter( 'upload_dir', array( $this, 'custom_upload_dir' ) );
 
         if ( empty( $uploaded_urls ) ) {
             $result['message'] = ! empty( $upload_errors ) ? implode( ' / ', $upload_errors ) : 'بارگذاری فایل انجام نشد.';
@@ -181,10 +182,9 @@ class Benana_Automation_Shortcodes {
         $user_id  = get_current_user_id();
         $search   = sanitize_text_field( wp_unslash( $_GET['benana_search'] ?? '' ) );
         $status   = sanitize_text_field( wp_unslash( $_GET['benana_status'] ?? '' ) );
-        $args     = array(
-            'post_type'  => 'project',
-            's'          => $search,
-            'meta_query' => array(
+        $meta_query = array(
+            'relation' => 'AND',
+            array(
                 'relation' => 'OR',
                 array(
                     'key'     => 'assigned_users',
@@ -199,17 +199,23 @@ class Benana_Automation_Shortcodes {
         );
 
         if ( ! empty( $status ) ) {
-            $args['meta_query'][] = array(
+            $meta_query[] = array(
                 'key'   => 'project_status',
                 'value' => $status,
             );
         }
+
+        $args = array(
+            'post_type'  => 'project',
+            's'          => $search,
+            'meta_query' => $meta_query,
+        );
         $projects       = get_posts( $args );
         $status_labels  = array(
             'new'           => 'در انتظار پذیرش',
             'accepted'      => 'در حال انجام',
-            'file_uploaded' => 'فایل بارگذاری شده',
-            'completed'     => 'تکمیل شده',
+            'file_uploaded' => 'فایل ثبت شده',
+            'completed'     => 'فایل ثبت شده',
             'rejected'      => 'رد شده',
         );
         ob_start();
@@ -426,13 +432,35 @@ class Benana_Automation_Shortcodes {
         $map = array(
             'new'           => 'در انتظار پذیرش',
             'accepted'      => 'در حال انجام',
-            'file_uploaded' => 'فایل بارگذاری شده',
-            'completed'     => 'تکمیل شده',
+            'file_uploaded' => 'فایل ثبت شده',
+            'completed'     => 'فایل ثبت شده',
             'rejected'      => 'رد شده',
             'approved'      => 'تأیید شده',
         );
 
         return $map[ $status ] ?? $status;
+    }
+
+    private function ensure_custom_upload_dir() {
+        $path = trailingslashit( WP_CONTENT_DIR ) . 'project_files';
+        if ( ! file_exists( $path ) ) {
+            wp_mkdir_p( $path );
+        }
+    }
+
+    public function custom_upload_dir( $dirs ) {
+        $base_dir = trailingslashit( WP_CONTENT_DIR ) . 'project_files';
+        $base_url = 'https://naghshehbardar.com/project_files';
+        $subdir   = ltrim( $dirs['subdir'] ?? '', '/' );
+
+        wp_mkdir_p( trailingslashit( $base_dir ) . $subdir );
+
+        $dirs['path']    = trailingslashit( $base_dir ) . $subdir;
+        $dirs['basedir'] = $base_dir;
+        $dirs['url']     = trailingslashit( $base_url ) . $subdir;
+        $dirs['baseurl'] = $base_url;
+
+        return $dirs;
     }
 
     public function history_shortcode() {

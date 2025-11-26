@@ -127,9 +127,10 @@ class Benana_Automation_Project_Handler {
 
         update_post_meta( $project_id, 'file_url', $urls[0] );
         update_post_meta( $project_id, 'file_urls', wp_json_encode( $urls ) );
-        update_post_meta( $project_id, 'project_status', 'file_uploaded' );
+        update_post_meta( $project_id, 'project_status', 'completed' );
         $entry = self::get_entry_for_project( $project_id );
         self::send_file_uploaded_sms( $project_id, $user_id, $entry );
+        self::send_complete_sms( $project_id, $user_id, $entry );
         return true;
     }
 

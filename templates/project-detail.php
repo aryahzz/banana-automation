@@ -3,6 +3,9 @@
     <div class="benana-meta">
         <span class="benana-status-tag"><span class="dot"></span><?php echo esc_html( $view['status_label'] ); ?></span>
         <span>موقعیت: <?php echo esc_html( Benana_Automation_Address::get_city_name( $view['province'], $view['city'] ) ); ?></span>
+        <?php if ( ! empty( $view['entry_date'] ) ) : ?>
+            <span>تاریخ ورودی: <?php echo esc_html( $view['entry_date'] ); ?></span>
+        <?php endif; ?>
     </div>
 
     <?php if ( ! empty( $view['action_msg'] ) ) : ?>

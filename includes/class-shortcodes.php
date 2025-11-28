@@ -215,9 +215,15 @@ class Benana_Automation_Shortcodes {
             'new'           => 'در انتظار پذیرش',
             'accepted'      => 'در حال انجام',
             'file_uploaded' => 'فایل ثبت شده',
-            'completed'     => 'فایل ثبت شده',
+            'completed'     => 'تکمیل شده',
             'rejected'      => 'رد شده',
         );
+
+        $entry_dates = array();
+        foreach ( $projects as $project ) {
+            $snapshot                 = Benana_Automation_Project_Handler::get_entry_snapshot( $project->ID );
+            $entry_dates[ $project->ID ] = $this->format_entry_datetime( $snapshot['entry'], $project->ID );
+        }
         ob_start();
         include BENANA_AUTOMATION_PATH . 'templates/inbox.php';
         return ob_get_clean();
@@ -255,54 +261,18 @@ class Benana_Automation_Shortcodes {
         }
 
         $form = ( function_exists( 'GFAPI' ) && ! empty( $form_id ) ) ? GFAPI::get_form( $form_id ) : array();
-        $settings     = Benana_Automation_Settings::get_settings();
-        $fields       = array( 'before' => array() );
-        $upload_field = '';
+        $settings      = Benana_Automation_Settings::get_settings();
+        $hidden_before = array();
+        $upload_field  = '';
         if ( isset( $settings['gravity_forms'][ $form_id ] ) ) {
-            $gf_settings      = $settings['gravity_forms'][ $form_id ];
-            $fields['before'] = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
-            $upload_field     = $gf_settings['file_field'] ?? ( $gf_settings['upload_field'] ?? '' );
+            $gf_settings   = $settings['gravity_forms'][ $form_id ];
+            $hidden_before = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
+            $upload_field  = $gf_settings['file_field'] ?? ( $gf_settings['upload_field'] ?? '' );
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = array();
-
-        foreach ( $fields['before'] as $field_key ) {
-            $value = $this->resolve_field_value( $field_key, $entry, $form, $snapshot['display'] );
-            if ( $this->is_empty_value( $value ) ) {
-                continue;
-            }
-
-            $render_fields[] = array(
-                'key'   => $field_key,
-                'label' => $this->resolve_field_label( $field_key, $form, $snapshot['labels'] ),
-                'value' => $value,
-            );
-        }
-
-        if ( 'new' !== $status && ! empty( $form['fields'] ) ) {
-            foreach ( $form['fields'] as $field ) {
-                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
-                if ( '' === $fid ) {
-                    continue;
-                }
-
-                if ( in_array( (string) $fid, $fields['before'], true ) ) {
-                    continue;
-                }
-
-                $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
-                if ( $this->is_empty_value( $value ) ) {
-                    continue;
-                }
-
-                $render_fields[] = array(
-                    'key'   => $fid,
-                    'label' => $this->resolve_field_label( $fid, $form, $snapshot['labels'] ),
-                    'value' => $value,
-                );
-            }
-        }
+        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status );
+        $entry_date    = $this->format_entry_datetime( $snapshot['entry'], $project_id );
 
         $view = array(
             'project'       => $project,
@@ -320,6 +290,7 @@ class Benana_Automation_Shortcodes {
             'action_text'   => $action_txt,
             'upload_field'  => $upload_field,
             'entry_id'      => get_post_meta( $project_id, 'gf_entry_id', true ),
+            'entry_date'    => $entry_date,
         );
 
         ob_start();
@@ -428,12 +399,65 @@ class Benana_Automation_Shortcodes {
         return $field_id;
     }
 
+    private function prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status ) {
+        $render_fields = array();
+
+        $field_ids = array();
+        if ( ! empty( $form['fields'] ) ) {
+            foreach ( $form['fields'] as $field ) {
+                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+                if ( '' === $fid ) {
+                    continue;
+                }
+                $field_ids[] = (string) $fid;
+            }
+        } elseif ( ! empty( $snapshot['display'] ) ) {
+            $field_ids = array_keys( $snapshot['display'] );
+        }
+
+        $field_ids = array_unique( $field_ids );
+
+        foreach ( $field_ids as $fid ) {
+            if ( 'new' === $status && in_array( (string) $fid, $hidden_before, true ) ) {
+                continue;
+            }
+
+            $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
+            if ( $this->is_empty_value( $value ) ) {
+                continue;
+            }
+
+            $render_fields[] = array(
+                'key'   => $fid,
+                'label' => $this->resolve_field_label( $fid, $form, $snapshot['labels'] ),
+                'value' => $value,
+            );
+        }
+
+        return $render_fields;
+    }
+
+    private function format_entry_datetime( $entry, $project_id ) {
+        $raw = $entry['date_created'] ?? '';
+
+        if ( empty( $raw ) ) {
+            $raw = get_post_time( 'Y-m-d H:i:s', true, $project_id );
+        }
+
+        $timestamp = $raw ? strtotime( $raw ) : false;
+        if ( ! $timestamp ) {
+            $timestamp = get_post_timestamp( $project_id );
+        }
+
+        return $timestamp ? date_i18n( 'Y/m/d H:i', $timestamp ) : '';
+    }
+
     private function translate_status( $status ) {
         $map = array(
             'new'           => 'در انتظار پذیرش',
             'accepted'      => 'در حال انجام',
             'file_uploaded' => 'فایل ثبت شده',
-            'completed'     => 'فایل ثبت شده',
+            'completed'     => 'تکمیل شده',
             'rejected'      => 'رد شده',
             'approved'      => 'تأیید شده',
         );

@@ -19,6 +19,7 @@
             $city        = Benana_Automation_Address::get_city_name( get_post_meta( $project->ID, 'project_province_id', true ), get_post_meta( $project->ID, 'project_city_id', true ) );
             $projects_pg = get_page_by_path( 'projects' );
             $detail_url  = $projects_pg ? add_query_arg( 'project_id', $project->ID, get_permalink( $projects_pg ) ) : add_query_arg( 'project_id', $project->ID, home_url( '/projects/' ) );
+            $entry_date  = $entry_dates[ $project->ID ] ?? '';
             ?>
             <div class="benana-card">
                 <a class="benana-eye" href="<?php echo esc_url( $detail_url ); ?>" aria-label="مشاهده پروژه">
@@ -28,6 +29,9 @@
                 <div class="meta">
                     <span class="benana-status-pill"><span class="benana-status-dot"></span><?php echo esc_html( $status_labels[ $status ] ?? $status ); ?></span>
                 </div>
+                <?php if ( $entry_date ) : ?>
+                    <div class="meta">تاریخ ورودی: <?php echo esc_html( $entry_date ); ?></div>
+                <?php endif; ?>
                 <?php if ( $city ) : ?>
                     <div class="meta">شهر: <?php echo esc_html( $city ); ?></div>
                 <?php endif; ?>

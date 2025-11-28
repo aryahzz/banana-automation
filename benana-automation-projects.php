@@ -3,7 +3,7 @@
 Plugin Name: بنانا اتوماسیون پروژه‌ها
 Plugin URI: https://github.com/aryahzz/banana-automation
 Description: سیستم اتوماسیون مدیریت پروژه با Gravity Forms و WP-SMS.
-Version: 1.3.16
+Version: 1.3.17
 Requires at least: 6.0
 Requires PHP: 7.4
 Author: Banana Automation
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.3.16' );
+define( 'BENANA_AUTOMATION_VERSION', '1.3.17' );
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';

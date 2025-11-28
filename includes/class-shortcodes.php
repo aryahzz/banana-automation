@@ -435,6 +435,14 @@ class Benana_Automation_Shortcodes {
 
         $field_ids = array_unique( $field_ids );
 
+        if ( empty( $field_ids ) && ! empty( $snapshot['display'] ) ) {
+            $field_ids = array_keys( $snapshot['display'] );
+        }
+
+        if ( empty( $field_ids ) && ! empty( $snapshot['entry'] ) ) {
+            $field_ids = array_keys( $snapshot['entry'] );
+        }
+
         foreach ( $field_ids as $fid ) {
             if ( 'new' === $status && in_array( (string) $fid, $hidden_before, true ) ) {
                 continue;
@@ -442,7 +450,7 @@ class Benana_Automation_Shortcodes {
 
             $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
             if ( $this->is_empty_value( $value ) ) {
-                $value = '—';
+                continue; // فیلد خالی نمایش داده نشود.
             }
 
             $render_fields[] = array(
@@ -493,7 +501,7 @@ class Benana_Automation_Shortcodes {
     public function custom_upload_dir( $dirs ) {
         $base_dir = trailingslashit( WP_CONTENT_DIR ) . 'project_files';
         $base_url = 'https://naghshehbardar.com/project_files';
-        $subdir   = ltrim( $dirs['subdir'] ?? '', '/' );
+        $subdir   = ltrim( (string) ( $dirs['subdir'] ?? '' ), '/' );
 
         wp_mkdir_p( trailingslashit( $base_dir ) . $subdir );
 

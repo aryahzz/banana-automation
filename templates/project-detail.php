@@ -78,8 +78,8 @@
 
                     ?>
                     <div class="benana-field">
-                        <strong><?php echo esc_html( $field['label'] ); ?></strong>
-                        <div><?php echo wp_kses_post( $value ); ?></div>
+                        <strong class="benana-field__label"><?php echo esc_html( $field['label'] ); ?></strong>
+                        <div class="benana-field__value"><?php echo wp_kses_post( $value ); ?></div>
                     </div>
                     <?php
                 }

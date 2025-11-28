@@ -242,6 +242,8 @@ class Benana_Automation_Project_Handler {
                 }
 
                 $raw_values = array();
+
+                // Resolve labels from the field definition first to avoid mixing user values into labels.
                 if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
                     foreach ( $field->get_entry_inputs() as $input ) {
                         $iid = (string) ( $input['id'] ?? '' );
@@ -253,9 +255,10 @@ class Benana_Automation_Project_Handler {
                     }
                 }
 
-                $raw        = empty( $raw_values ) ? rgar( $entry, $fid ) : $raw_values;
-                $displayed  = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
                 $labels[ $fid ] = is_object( $field ) ? $field->label : ( $field['label'] ?? $fid );
+
+                $raw       = empty( $raw_values ) ? rgar( $entry, $fid ) : $raw_values;
+                $displayed = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
 
                 if ( '' === trim( wp_strip_all_tags( (string) $displayed ) ) ) {
                     $displayed = is_array( $raw ) ? implode( ', ', array_filter( array_map( 'trim', (array) $raw ) ) ) : $raw;

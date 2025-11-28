@@ -391,10 +391,7 @@ class Benana_Automation_Shortcodes {
     private function resolve_field_label( $token, $form, $label_map = array() ) {
         $field_id = trim( $token, '{}' );
 
-        if ( isset( $label_map[ $field_id ] ) ) {
-            return $label_map[ $field_id ];
-        }
-
+        // Prefer live form definitions to prevent stale snapshots from swapping labels/values.
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
@@ -411,6 +408,10 @@ class Benana_Automation_Shortcodes {
                     }
                 }
             }
+        }
+
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
         }
 
         return $field_id;

@@ -5,6 +5,7 @@ class Benana_Automation_Settings {
     public function __construct() {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'admin_post_benana_delete_gf_entry', array( $this, 'delete_gf_entry' ) );
     }
 
     public static function get_settings() {
@@ -39,6 +40,32 @@ class Benana_Automation_Settings {
     public function register_settings() {
         register_setting( 'benana_automation_settings', self::OPTION_KEY, array( $this, 'sanitize_settings' ) );
         add_action( 'admin_post_benana_manual_update_check', array( $this, 'manual_update_check' ) );
+    }
+
+    public function delete_gf_entry() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'دسترسی غیرمجاز' );
+        }
+
+        check_admin_referer( 'benana_delete_entry', 'benana_delete_entry_nonce' );
+
+        $entry_id = absint( $_POST['gf_entry_id'] ?? 0 );
+        $redirect = admin_url( 'admin.php?page=benana-automation-entries' );
+
+        if ( ! $entry_id || ! class_exists( 'GFAPI' ) ) {
+            wp_safe_redirect( add_query_arg( 'benana_entry_delete', rawurlencode( 'شناسه ورودی نامعتبر است.' ), $redirect ) );
+            exit;
+        }
+
+        $result = GFAPI::delete_entry( $entry_id );
+        if ( is_wp_error( $result ) ) {
+            $redirect = add_query_arg( 'benana_entry_delete', rawurlencode( $result->get_error_message() ), $redirect );
+        } else {
+            $redirect = add_query_arg( 'benana_entry_delete', rawurlencode( 'ورودی با موفقیت حذف شد.' ), $redirect );
+        }
+
+        wp_safe_redirect( $redirect );
+        exit;
     }
 
     public function settings_page() {
@@ -138,6 +165,16 @@ class Benana_Automation_Settings {
         ?>
         <div class="wrap benana-admin">
             <h1>ورودی‌ها</h1>
+            <?php if ( isset( $_GET['benana_entry_delete'] ) ) : ?>
+                <div class="notice notice-info"><p><?php echo esc_html( rawurldecode( wp_unslash( $_GET['benana_entry_delete'] ) ) ); ?></p></div>
+            <?php endif; ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="benana-inline-form">
+                <?php wp_nonce_field( 'benana_delete_entry', 'benana_delete_entry_nonce' ); ?>
+                <input type="hidden" name="action" value="benana_delete_gf_entry" />
+                <label for="gf_entry_id">شناسه ورودی Gravity Forms:</label>
+                <input type="number" name="gf_entry_id" id="gf_entry_id" min="1" required />
+                <button type="submit" class="button button-secondary">حذف ورودی</button>
+            </form>
             <form method="get" class="benana-filters">
                 <input type="hidden" name="page" value="benana-automation-entries" />
                 <label for="project_status">فیلتر وضعیت:</label>

@@ -241,7 +241,19 @@ class Benana_Automation_Project_Handler {
                     continue;
                 }
 
-                $raw        = rgar( $entry, $fid );
+                $raw_values = array();
+                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
+                    foreach ( $field->get_entry_inputs() as $input ) {
+                        $iid = (string) ( $input['id'] ?? '' );
+                        if ( '' === $iid ) {
+                            continue;
+                        }
+                        $raw_values[ $iid ] = rgar( $entry, $iid );
+                        $labels[ $iid ]      = $input['label'] ?? $iid;
+                    }
+                }
+
+                $raw        = empty( $raw_values ) ? rgar( $entry, $fid ) : $raw_values;
                 $displayed  = GFCommon::get_lead_field_display( $field, $raw, $entry['currency'] ?? '', true, 'html' );
                 $labels[ $fid ] = is_object( $field ) ? $field->label : ( $field['label'] ?? $fid );
 
@@ -250,6 +262,17 @@ class Benana_Automation_Project_Handler {
                 }
 
                 $display[ $fid ] = $displayed;
+
+                // زیرشاخه‌های فیلدهای چندبخشی را هم ذخیره می‌کنیم تا نمایش برچسب جدید دچار مشکل نشود.
+                if ( ! empty( $raw_values ) ) {
+                    foreach ( $raw_values as $iid => $ival ) {
+                        $sub_display = GFCommon::get_lead_field_display( $field, $ival, $entry['currency'] ?? '', true, 'html' );
+                        if ( '' === trim( wp_strip_all_tags( (string) $sub_display ) ) ) {
+                            $sub_display = is_array( $ival ) ? implode( ', ', array_filter( array_map( 'trim', (array) $ival ) ) ) : $ival;
+                        }
+                        $display[ $iid ] = $sub_display;
+                    }
+                }
             }
         }
 

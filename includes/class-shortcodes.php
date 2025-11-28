@@ -387,11 +387,20 @@ class Benana_Automation_Shortcodes {
             return $label_map[ $field_id ];
         }
 
-        if ( is_numeric( $field_id ) && ! empty( $form['fields'] ) ) {
+        if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
                     return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
+                }
+
+                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
+                    foreach ( $field->get_entry_inputs() as $input ) {
+                        $iid = (string) ( $input['id'] ?? '' );
+                        if ( (string) $iid === (string) $field_id ) {
+                            return $input['label'] ?? $field_id;
+                        }
+                    }
                 }
             }
         }
@@ -410,6 +419,15 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
                 $field_ids[] = (string) $fid;
+
+                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
+                    foreach ( $field->get_entry_inputs() as $input ) {
+                        $iid = (string) ( $input['id'] ?? '' );
+                        if ( '' !== $iid ) {
+                            $field_ids[] = $iid;
+                        }
+                    }
+                }
             }
         } elseif ( ! empty( $snapshot['display'] ) ) {
             $field_ids = array_keys( $snapshot['display'] );
@@ -444,12 +462,12 @@ class Benana_Automation_Shortcodes {
             $raw = get_post_time( 'Y-m-d H:i:s', true, $project_id );
         }
 
-        $timestamp = $raw ? strtotime( $raw ) : false;
+        $timestamp = $raw ? ( function_exists( 'GFCommon' ) ? GFCommon::get_local_timestamp( $raw ) : strtotime( $raw ) ) : false;
         if ( ! $timestamp ) {
             $timestamp = get_post_timestamp( $project_id );
         }
 
-        return $timestamp ? date_i18n( 'Y/m/d H:i', $timestamp ) : '';
+        return $timestamp ? wp_date( 'Y/m/d H:i', $timestamp ) : '';
     }
 
     private function translate_status( $status ) {

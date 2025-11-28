@@ -1,0 +1,7 @@
+{
+  "version": "1.3.17",
+    "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
+    "requires": "6.0",
+    "tested": "6.5",
+  "changelog": "- نمایش همه فیلدهای فرم پس از پذیرش و پنهان‌سازی انتخابی پیش از پذیرش\n- افزودن تاریخ/ساعت ورودی فرم به کارت اینباکس و صفحه جزئیات پروژه\n- بهبود برچسب‌های فارسی وضعیت و انتشار نسخه 1.3.17"
+}

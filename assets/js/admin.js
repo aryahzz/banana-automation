@@ -72,5 +72,44 @@ jQuery(document).ready(function($){
 
     initCitySelectors();
 
-    // toggle handled by native checkbox
+    var $entryCheckboxes = $('.benana-entry-checkbox');
+    var $selectAll       = $('#benana-select-all');
+    var $deleteForm      = $('#benana-delete-entries-form');
+    var $deleteButton    = $('#benana-delete-selected');
+
+    function updateDeleteState() {
+        var total   = $entryCheckboxes.length;
+        var checked = $entryCheckboxes.filter(':checked').length;
+
+        $deleteButton.prop('disabled', checked === 0);
+        $selectAll.prop('checked', total > 0 && checked === total);
+    }
+
+    $selectAll.on('change', function(){
+        var checked = $(this).is(':checked');
+        $entryCheckboxes.prop('checked', checked);
+        updateDeleteState();
+    });
+
+    $entryCheckboxes.on('change', updateDeleteState);
+
+    $('.benana-row-delete').on('click', function(){
+        var $target = $('.benana-entry-checkbox[value="' + $(this).val() + '"]');
+        if ( $target.length ) {
+            $entryCheckboxes.prop('checked', false);
+            $target.prop('checked', true);
+            updateDeleteState();
+        }
+    });
+
+    $deleteForm.on('submit', function(){
+        if ( $('.benana-entry-checkbox:checked').length === 0 ) {
+            alert('هیچ ورودی‌ای برای حذف انتخاب نشده است.');
+            return false;
+        }
+
+        return window.confirm('از حذف ورودی‌های انتخاب‌شده مطمئن هستید؟');
+    });
+
+    updateDeleteState();
 });

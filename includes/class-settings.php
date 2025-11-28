@@ -6,6 +6,7 @@ class Benana_Automation_Settings {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
         add_action( 'admin_post_benana_delete_gf_entry', array( $this, 'delete_gf_entry' ) );
+        add_action( 'admin_post_benana_delete_projects', array( $this, 'delete_projects' ) );
     }
 
     public static function get_settings() {
@@ -65,6 +66,44 @@ class Benana_Automation_Settings {
         }
 
         wp_safe_redirect( $redirect );
+        exit;
+    }
+
+    public function delete_projects() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'دسترسی غیرمجاز' );
+        }
+
+        check_admin_referer( 'benana_delete_projects', 'benana_delete_projects_nonce' );
+
+        $ids      = isset( $_POST['project_ids'] ) ? (array) $_POST['project_ids'] : array();
+        $ids      = array_filter( array_map( 'absint', $ids ) );
+        $redirect = admin_url( 'admin.php?page=benana-automation-entries' );
+
+        if ( empty( $ids ) ) {
+            wp_safe_redirect( add_query_arg( 'benana_entry_delete', rawurlencode( 'ورودی‌ای برای حذف انتخاب نشد.' ), $redirect ) );
+            exit;
+        }
+
+        $deleted = 0;
+
+        foreach ( $ids as $project_id ) {
+            if ( wp_delete_post( $project_id, true ) ) {
+                $deleted++;
+            }
+        }
+
+        $failed  = count( $ids ) - $deleted;
+        $message = 'حذفی انجام نشد.';
+
+        if ( $deleted && $failed ) {
+            /* translators: 1: deleted count, 2: failed count. */
+            $message = sprintf( 'حذف %1$d ورودی انجام شد و %2$d ورودی حذف نشد.', $deleted, $failed );
+        } elseif ( $deleted ) {
+            $message = sprintf( '%d ورودی حذف شد.', $deleted );
+        }
+
+        wp_safe_redirect( add_query_arg( 'benana_entry_delete', rawurlencode( $message ), $redirect ) );
         exit;
     }
 
@@ -187,9 +226,16 @@ class Benana_Automation_Settings {
                 <button class="button">اعمال فیلتر</button>
             </form>
 
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="benana-delete-entries-form" class="benana-inline-form benana-delete-form">
+                <?php wp_nonce_field( 'benana_delete_projects', 'benana_delete_projects_nonce' ); ?>
+                <input type="hidden" name="action" value="benana_delete_projects" />
+                <button type="submit" class="button button-secondary" id="benana-delete-selected" disabled>حذف انتخاب‌شده‌ها</button>
+            </form>
+
             <table class="widefat fixed striped">
                 <thead>
                     <tr>
+                        <th class="manage-column column-cb check-column"><input type="checkbox" id="benana-select-all" /></th>
                         <th>شناسه</th>
                         <th>عنوان</th>
                         <th>ورودی GF</th>
@@ -198,6 +244,7 @@ class Benana_Automation_Settings {
                         <th>کارگزاران</th>
                         <th>پذیرفته‌شده توسط</th>
                         <th>فایل</th>
+                        <th>اقدامات</th>
                         <th>تاریخ</th>
                     </tr>
                 </thead>
@@ -234,6 +281,7 @@ class Benana_Automation_Settings {
                             ) : '';
                             ?>
                             <tr>
+                                <td class="check-column"><input type="checkbox" form="benana-delete-entries-form" class="benana-entry-checkbox" name="project_ids[]" value="<?php echo esc_attr( $project_id ); ?>" /></td>
                                 <td>#<?php echo esc_html( $project_id ); ?></td>
                                 <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
                                 <td><?php echo $gf_link ? '<a href="' . esc_url( $gf_link ) . '">مشاهده ورودی</a>' : '—'; ?></td>
@@ -242,6 +290,7 @@ class Benana_Automation_Settings {
                                 <td><?php echo esc_html( is_array( $assigned_users ) ? count( $assigned_users ) : 0 ); ?></td>
                                 <td><?php echo $accepted_user ? esc_html( $accepted_user->display_name ) : '—'; ?></td>
                                 <td><?php echo $file_url ? '<a href="' . esc_url( $file_url ) . '" target="_blank">مشاهده</a>' : '—'; ?></td>
+                                <td><button type="submit" form="benana-delete-entries-form" class="button-link-delete benana-row-delete" name="project_ids[]" value="<?php echo esc_attr( $project_id ); ?>">حذف</button></td>
                                 <td><?php echo esc_html( get_the_date( 'Y/m/d H:i' ) ); ?></td>
                             </tr>
                             <?php
@@ -249,7 +298,7 @@ class Benana_Automation_Settings {
                         wp_reset_postdata();
                     else :
                         ?>
-                        <tr><td colspan="8">موردی یافت نشد.</td></tr>
+                        <tr><td colspan="11">موردی یافت نشد.</td></tr>
                         <?php
                     endif;
                     ?>

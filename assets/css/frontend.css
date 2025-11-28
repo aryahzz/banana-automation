@@ -272,6 +272,12 @@
     color: var(--benana-primary);
 }
 
+.benana-entry-fields .benana-field__label {
+    display: block;
+    color: #6b7280;
+    font-weight: 500;
+}
+
 @media (max-width: 640px) {
     .benana-card { padding-left: 64px; }
     .benana-card .benana-eye { left: 12px; }

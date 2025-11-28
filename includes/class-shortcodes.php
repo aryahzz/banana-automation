@@ -271,7 +271,8 @@ class Benana_Automation_Shortcodes {
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status );
+        $merged_entry  = array_merge( $snapshot['entry'], $entry );
+        $render_fields = $this->prepare_fields_for_display( $form, $merged_entry, $snapshot, $hidden_before, $status );
         $entry_date    = $this->format_entry_datetime( $snapshot['entry'], $project_id );
 
         $view = array(
@@ -324,7 +325,14 @@ class Benana_Automation_Shortcodes {
 
     private function is_empty_value( $value ) {
         if ( is_array( $value ) ) {
-            $value = implode( '', array_map( 'trim', $value ) );
+            $filled = array();
+            foreach ( $value as $val ) {
+                if ( ! $this->is_empty_value( $val ) ) {
+                    $filled[] = $val;
+                }
+            }
+
+            return empty( $filled );
         }
 
         return '' === trim( wp_strip_all_tags( (string) $value ) );
@@ -410,6 +418,7 @@ class Benana_Automation_Shortcodes {
 
     private function prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status ) {
         $render_fields = array();
+        $field_map     = $this->map_form_fields( $form );
 
         $field_ids = array();
         if ( ! empty( $form['fields'] ) ) {
@@ -448,19 +457,99 @@ class Benana_Automation_Shortcodes {
                 continue;
             }
 
-            $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
-            if ( $this->is_empty_value( $value ) ) {
-                continue; // فیلد خالی نمایش داده نشود.
+            $value    = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
+            $raw      = $this->resolve_raw_value( $fid, $entry, $snapshot );
+            $field_id = (string) $fid;
+
+            if ( $this->is_empty_value( $value ) || $this->is_default_value( $field_id, $raw, $field_map ) ) {
+                continue; // فیلد خالی یا مقدار پیش‌فرض نمایش داده نشود.
             }
 
             $render_fields[] = array(
-                'key'   => $fid,
-                'label' => $this->resolve_field_label( $fid, $form, $snapshot['labels'] ),
+                'key'   => $field_id,
+                'label' => $this->resolve_field_label( $field_id, $form, $snapshot['labels'] ),
                 'value' => $value,
             );
         }
 
         return $render_fields;
+    }
+
+    private function resolve_raw_value( $token, $entry, $snapshot ) {
+        $clean = trim( $token, '{}' );
+
+        if ( isset( $entry[ $clean ] ) ) {
+            return $entry[ $clean ];
+        }
+
+        if ( isset( $snapshot['entry'][ $clean ] ) ) {
+            return $snapshot['entry'][ $clean ];
+        }
+
+        return '';
+    }
+
+    private function map_form_fields( $form ) {
+        $map = array();
+
+        if ( empty( $form['fields'] ) ) {
+            return $map;
+        }
+
+        foreach ( $form['fields'] as $field ) {
+            $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+            if ( '' === $fid ) {
+                continue;
+            }
+
+            $map[ (string) $fid ] = $field;
+        }
+
+        return $map;
+    }
+
+    private function is_default_value( $field_id, $raw_value, $field_map ) {
+        if ( $this->is_empty_value( $raw_value ) ) {
+            return false;
+        }
+
+        $parent_id = ( strpos( (string) $field_id, '.' ) !== false ) ? explode( '.', (string) $field_id )[0] : $field_id;
+        $field     = $field_map[ (string) $field_id ] ?? $field_map[ (string) $parent_id ] ?? null;
+
+        if ( ! $field ) {
+            return false;
+        }
+
+        $defaults = array();
+        if ( isset( $field->defaultValue ) && '' !== trim( (string) $field->defaultValue ) ) {
+            $defaults[] = $field->defaultValue;
+        }
+
+        if ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+            foreach ( $field->inputs as $input ) {
+                if ( (string) ( $input['id'] ?? '' ) === (string) $field_id && isset( $input['defaultValue'] ) ) {
+                    $defaults[] = $input['defaultValue'];
+                }
+            }
+        }
+
+        if ( empty( $defaults ) ) {
+            return false;
+        }
+
+        if ( is_array( $raw_value ) ) {
+            $raw_value = implode( ' ', array_map( 'wp_strip_all_tags', $raw_value ) );
+        }
+
+        $raw_clean = wp_strip_all_tags( (string) $raw_value );
+
+        foreach ( $defaults as $default ) {
+            if ( trim( (string) $default ) === trim( $raw_clean ) ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function format_entry_datetime( $entry, $project_id ) {

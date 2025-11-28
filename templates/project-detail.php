@@ -71,11 +71,15 @@
             <div class="benana-field-grid">
                 <?php
                 foreach ( $view['fields'] as $field ) {
-                    $value = is_array( $field['value'] ) ? implode( '، ', (array) $field['value'] ) : $field['value'];
+                    $value = $field['value'];
+                    if ( is_array( $value ) ) {
+                        $value = implode( '<br>', array_map( 'wp_kses_post', (array) $value ) );
+                    }
+
                     ?>
                     <div class="benana-field">
                         <strong><?php echo esc_html( $field['label'] ); ?></strong>
-                        <div><?php echo esc_html( $value ); ?></div>
+                        <div><?php echo wp_kses_post( $value ); ?></div>
                     </div>
                     <?php
                 }

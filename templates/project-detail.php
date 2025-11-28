@@ -1,7 +1,7 @@
 <div class="benana-project-detail">
     <h3><?php echo esc_html( $view['project']->post_title ); ?></h3>
     <div class="benana-meta">
-        <span>وضعیت: <?php echo esc_html( $view['status_label'] ); ?></span>
+        <span class="benana-status-tag"><span class="dot"></span><?php echo esc_html( $view['status_label'] ); ?></span>
         <span>موقعیت: <?php echo esc_html( Benana_Automation_Address::get_city_name( $view['province'], $view['city'] ) ); ?></span>
     </div>
 
@@ -27,24 +27,26 @@
         </div>
     <?php endif; ?>
 
-    <div class="benana-actions">
-        <?php if ( 'new' === $view['status'] ) : ?>
-            <form method="post" class="benana-inline-form">
+    <?php if ( 'new' === $view['status'] ) : ?>
+        <div class="benana-actions-row">
+            <form method="post" class="benana-action-card accept">
+                <span class="icon">✔</span>
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="accept" />
                 <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
                 <button type="submit" class="button button-primary">پذیرش</button>
             </form>
-            <form method="post" class="benana-inline-form">
+            <form method="post" class="benana-action-card reject">
+                <span class="icon">✕</span>
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="reject" />
                 <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
                 <button type="submit" class="button">رد</button>
             </form>
-        <?php elseif ( 'accepted' === $view['status'] ) : ?>
-            <p>این پروژه را به‌عنوان مهندس پذیرفته‌اید.</p>
-        <?php endif; ?>
-    </div>
+        </div>
+    <?php elseif ( 'accepted' === $view['status'] ) : ?>
+        <p>این پروژه توسط شما در حال انجام است.</p>
+    <?php endif; ?>
 
     <?php if ( 'accepted' === $view['status'] ) : ?>
         <div class="benana-upload-box">
@@ -63,17 +65,19 @@
     <?php if ( ! empty( $view['fields'] ) ) : ?>
         <div class="benana-entry-fields">
             <h4>جزئیات پروژه</h4>
-            <?php
-            foreach ( $view['fields'] as $field ) {
-                $value = is_array( $field['value'] ) ? implode( '، ', (array) $field['value'] ) : $field['value'];
-                ?>
-                <div class="benana-field">
-                    <strong><?php echo esc_html( $field['label'] ); ?></strong>
-                    <div><?php echo esc_html( $value ); ?></div>
-                </div>
+            <div class="benana-field-grid">
                 <?php
-            }
-            ?>
+                foreach ( $view['fields'] as $field ) {
+                    $value = is_array( $field['value'] ) ? implode( '، ', (array) $field['value'] ) : $field['value'];
+                    ?>
+                    <div class="benana-field">
+                        <strong><?php echo esc_html( $field['label'] ); ?></strong>
+                        <div><?php echo esc_html( $value ); ?></div>
+                    </div>
+                    <?php
+                }
+                ?>
+            </div>
         </div>
     <?php endif; ?>
 </div>

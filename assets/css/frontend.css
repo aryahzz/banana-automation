@@ -1,108 +1,271 @@
+:root {
+    --benana-primary: #04003F;
+    --benana-accent: #6a66d7;
+    --benana-surface: #f6f6fb;
+    --benana-text: #1b1b2f;
+}
+
 .benana-inbox, .benana-history, .benana-stats {
     direction: rtl;
     text-align: right;
     font-family: 'Vazirmatn', sans-serif;
-}
-
-.benana-card {
-    border: 1px solid #ddd;
-    padding: 16px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    color: var(--benana-text);
 }
 
 .benana-filter {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
-.benana-filter input[type="text"] {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+.benana-filter input[type="text"],
+.benana-filter select {
+    padding: 10px 12px;
+    border: 1px solid #d7d7e4;
+    border-radius: 10px;
+    background: #fff;
+    min-width: 180px;
+}
+
+.benana-filter .button {
+    background: var(--benana-primary);
+    border-color: var(--benana-primary);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 18px;
+}
+
+.benana-card {
+    border: 1px solid #e5e7f4;
+    padding: 18px 18px 14px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(4,0,63,0.06);
+    position: relative;
+    overflow: hidden;
+}
+
+.benana-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(4,0,63,0.05), rgba(106,102,215,0.05));
+    pointer-events: none;
+}
+
+.benana-card strong {
+    font-size: 17px;
+    display: block;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 1;
 }
 
 .benana-card .meta {
     color: #666;
     font-size: 13px;
     margin: 4px 0;
+    position: relative;
+    z-index: 1;
 }
 
-.benana-actions a {
-    margin-left: 8px;
-}
-
-.benana-city-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 8px;
-    margin-top: 8px;
-    border: 1px solid #e5e5e5;
-    padding: 8px;
-    border-radius: 8px;
-    background: #fff;
-}
-
-.benana-city-item {
+.benana-actions {
+    margin-top: 10px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
 }
 
-.benana-availability-form {
-    border: 1px solid #e5e5e5;
-    padding: 16px;
-    border-radius: 10px;
-    background: #fafafa;
-    margin-bottom: 16px;
-}
-
-.benana-toggle {
+.benana-card .benana-eye {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    background: var(--benana-primary);
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(4,0,63,0.25);
+}
+
+.benana-card .benana-eye svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.benana-card .benana-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--benana-surface);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--benana-primary);
     font-weight: 600;
 }
 
-@media (max-width: 640px) {
-    .benana-card {
-        display: block;
-    }
+.benana-card .benana-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--benana-accent);
 }
 
 .benana-project-detail {
     background: #fff;
-    border: 1px solid #e5e5e5;
+    border: 1px solid #e5e7f4;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 12px 32px rgba(4,0,63,0.07);
+    position: relative;
+    overflow: hidden;
+}
+
+.benana-project-detail::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(4,0,63,0.04), rgba(106,102,215,0.05));
+    pointer-events: none;
+}
+
+.benana-project-detail h3 {
+    margin-top: 0;
+    font-size: 20px;
+}
+
+.benana-project-detail .benana-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 14px;
+}
+
+.benana-status-tag {
+    background: var(--benana-surface);
+    color: var(--benana-primary);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.benana-status-tag .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--benana-accent);
+}
+
+.benana-alert {
+    position: relative;
+    z-index: 1;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+}
+
+.benana-alert.success { background: #e6f7f1; color: #0a6f4f; border: 1px solid #b6e4cf; }
+.benana-alert.warning { background: #fff4e5; color: #8a4b00; border: 1px solid #ffd8a8; }
+
+.benana-actions-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 12px 0 6px;
+    position: relative;
+    z-index: 1;
+}
+
+.benana-action-card {
+    border: 1px solid #e0e3f0;
+    border-radius: 14px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(4,0,63,0.05);
+    text-align: center;
+}
+
+.benana-action-card .icon {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.benana-action-card.accept .icon { background: rgba(16, 168, 115, 0.15); color: #0f8c64; }
+.benana-action-card.reject .icon { background: rgba(200, 16, 68, 0.15); color: #c81044; }
+
+.benana-action-card .button {
+    width: 100%;
     border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 9px;
 }
 
-.benana-project-detail .benana-meta span {
-    display: inline-block;
-    margin-left: 15px;
+.benana-upload-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px dashed #cfd3ec;
+    background: #f8f8ff;
+    position: relative;
+    z-index: 1;
 }
 
-.benana-inline-form {
-    display: inline-block;
-    margin-left: 10px;
+.benana-upload-box h4 { margin-top: 0; }
+
+.benana-upload-box input[type="file"] {
+    margin: 8px 0;
 }
 
 .benana-entry-fields {
-    margin-top: 20px;
+    margin-top: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.benana-field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
 }
 
 .benana-entry-fields .benana-field {
-    padding: 10px;
-    border-bottom: 1px dashed #ddd;
+    padding: 12px;
+    border: 1px solid #eceff7;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(4,0,63,0.04);
 }
 
 .benana-entry-fields .benana-field strong {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    color: var(--benana-primary);
+}
+
+@media (max-width: 640px) {
+    .benana-card { padding-left: 64px; }
+    .benana-card .benana-eye { left: 12px; }
 }

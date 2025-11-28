@@ -442,7 +442,7 @@ class Benana_Automation_Shortcodes {
 
             $value = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
             if ( $this->is_empty_value( $value ) ) {
-                continue;
+                $value = '—';
             }
 
             $render_fields[] = array(

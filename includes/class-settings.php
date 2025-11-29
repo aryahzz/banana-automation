@@ -181,6 +181,11 @@ class Benana_Automation_Settings {
         $status_counts = $this->get_status_counts( $status_map );
         $daily_counts  = $this->get_daily_counts();
 
+        $status_map     = $this->get_status_labels();
+        $status_counts  = $this->get_status_counts( $status_map );
+        $recent_entries = $this->get_recent_projects();
+        $top_acceptors  = $this->get_top_acceptors();
+
         $query_args = array(
             'post_type'      => 'project',
             'posts_per_page' => -1,
@@ -425,6 +430,91 @@ class Benana_Automation_Settings {
             }, array_keys( $buckets ) ) ),
             'counts' => array_values( $buckets ),
         );
+    }
+
+    private function get_status_counts( $status_map ) {
+        $counts = array();
+        foreach ( $status_map as $status_key => $status_label ) {
+            $query = new WP_Query(
+                array(
+                    'post_type'      => 'project',
+                    'posts_per_page' => -1,
+                    'fields'         => 'ids',
+                    'no_found_rows'  => true,
+                    'meta_query'     => array(
+                        array(
+                            'key'   => 'project_status',
+                            'value' => $status_key,
+                        ),
+                    ),
+                )
+            );
+
+            $counts[ $status_key ] = $query->found_posts;
+        }
+
+        $total_query = new WP_Query( array( 'post_type' => 'project', 'posts_per_page' => -1, 'fields' => 'ids', 'no_found_rows' => true ) );
+
+        return array(
+            'total'    => $total_query->found_posts,
+            'statuses' => $counts,
+        );
+    }
+
+    private function get_recent_projects( $limit = 10 ) {
+        return new WP_Query(
+            array(
+                'post_type'      => 'project',
+                'posts_per_page' => $limit,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            )
+        );
+    }
+
+    private function get_top_acceptors( $limit = 3 ) {
+        $projects = get_posts(
+            array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+            )
+        );
+
+        $accept_counts = array();
+        foreach ( $projects as $project_id ) {
+            $accepted_by = get_post_meta( $project_id, 'accepted_by', true );
+            if ( empty( $accepted_by ) ) {
+                continue;
+            }
+
+            if ( ! isset( $accept_counts[ $accepted_by ] ) ) {
+                $accept_counts[ $accepted_by ] = 0;
+            }
+            $accept_counts[ $accepted_by ]++;
+        }
+
+        arsort( $accept_counts );
+
+        $top = array();
+        foreach ( $accept_counts as $user_id => $count ) {
+            $user = get_user_by( 'id', $user_id );
+            if ( ! $user ) {
+                continue;
+            }
+
+            $top[] = array(
+                'user'  => $user,
+                'count' => $count,
+            );
+
+            if ( count( $top ) >= $limit ) {
+                break;
+            }
+        }
+
+        return $top;
     }
 
     private function get_status_labels() {

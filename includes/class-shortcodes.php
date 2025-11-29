@@ -68,7 +68,7 @@ class Benana_Automation_Shortcodes {
 
         $accepted = intval( get_post_meta( $project_id, 'accepted_by', true ) );
         if ( $accepted !== intval( $user_id ) ) {
-            $result['message'] = 'فقط مهندس پذیرفته‌کننده می‌تواند فایل بارگذاری کند.';
+            $result['message'] = 'فقط مهندس پذیرنده می‌تواند فایل بارگذاری کند.';
             return $result;
         }
 
@@ -164,14 +164,14 @@ class Benana_Automation_Shortcodes {
         Benana_Automation_Project_Handler::upload_file( $project_id, $user_id, $uploaded_urls );
 
         $result['status']  = 'uploaded';
-        $result['message'] = 'فایل با موفقیت پیوست شد.';
+        $result['message'] = '';
 
         return $result;
     }
 
     public function inbox_shortcode( $atts ) {
         if ( ! is_user_logged_in() ) {
-            return '<p>برای مشاهده پروژه‌ها وارد شوید.</p>';
+            return '<p class="login-error-benana">برای مشاهده پروژه‌ها وارد شوید.</p>';
         }
         $user_id  = get_current_user_id();
         $search   = sanitize_text_field( wp_unslash( $_GET['benana_search'] ?? '' ) );
@@ -224,24 +224,24 @@ class Benana_Automation_Shortcodes {
 
     public function project_detail_shortcode() {
         if ( ! is_user_logged_in() ) {
-            return '<p>برای مشاهده پروژه ابتدا وارد شوید.</p>';
+            return '<p class="login-error-benana">برای مشاهده پروژه‌ها وارد شوید.</p>';
         }
 
         $project_id = absint( $_GET['project_id'] ?? 0 );
         $action_msg = sanitize_text_field( wp_unslash( $_GET['benana_action_status'] ?? '' ) );
         $action_txt = sanitize_text_field( wp_unslash( $_GET['benana_action_message'] ?? '' ) );
         if ( ! $project_id ) {
-            return '<p>پروژه‌ای انتخاب نشده است.</p>';
+            return '<p class="not-selected-benana">پروژه‌ای انتخاب نشده است.</p>';
         }
 
         $project = get_post( $project_id );
         if ( ! $project || 'project' !== $project->post_type ) {
-            return '<p>پروژه پیدا نشد.</p>';
+            return '<p class="notfound-error-benana">پروژه پیدا نشد.</p>';
         }
 
         $user_id = get_current_user_id();
         if ( ! Benana_Automation_Project_Handler::user_is_assignee( $project_id, $user_id ) ) {
-            return '<p>دسترسی به این پروژه ندارید.</p>';
+            return '<p class="noaccess-error-benana" >دسترسی به این پروژه ندارید.</p>';
         }
 
         $entry   = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
@@ -642,7 +642,7 @@ class Benana_Automation_Shortcodes {
 
     public function availability_shortcode() {
         if ( ! is_user_logged_in() ) {
-            return '<p>برای مدیریت وضعیت خود ابتدا وارد شوید.</p>';
+            return '<p class="login-error-benana">برای مدیریت وضعیت خود ابتدا وارد شوید.</p>';
         }
 
         $user_id = get_current_user_id();

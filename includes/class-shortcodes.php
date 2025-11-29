@@ -244,9 +244,10 @@ class Benana_Automation_Shortcodes {
             return '<p class="noaccess-error-benana" >دسترسی به این پروژه ندارید.</p>';
         }
 
-        $entry   = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
-        $form_id = get_post_meta( $project_id, 'gf_form_id', true );
-        $status  = get_post_meta( $project_id, 'project_status', true );
+        $entry    = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
+        $snapshot = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
+        $form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+        $status   = get_post_meta( $project_id, 'project_status', true );
 
         if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
             $form_id = $entry['form_id'];
@@ -261,8 +262,8 @@ class Benana_Automation_Shortcodes {
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = $this->prepare_fields_for_display( $form, $entry );
-        $entry_date    = $this->format_entry_datetime( $entry, $project_id );
+        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot );
+        $entry_date    = $this->format_entry_datetime( empty( $entry ) ? $snapshot['entry'] : $entry, $project_id );
 
         $view = array(
             'project'       => $project,
@@ -405,12 +406,20 @@ class Benana_Automation_Shortcodes {
         return $field_id;
     }
 
-    private function prepare_fields_for_display( $form, $entry ) {
-        $entry   = is_array( $entry ) ? $entry : (array) $entry;
-        $form    = is_array( $form ) ? $form : array();
-        $fields  = array();
-        $render  = array();
-        $handled = array();
+    private function prepare_fields_for_display( $form, $entry, $snapshot = array() ) {
+        $entry            = is_array( $entry ) ? $entry : (array) $entry;
+        $form             = is_array( $form ) ? $form : array();
+        $snapshot         = is_array( $snapshot ) ? $snapshot : array();
+        $snapshot_entry   = isset( $snapshot['entry'] ) && is_array( $snapshot['entry'] ) ? $snapshot['entry'] : array();
+        $snapshot_display = isset( $snapshot['display'] ) && is_array( $snapshot['display'] ) ? $snapshot['display'] : array();
+        $snapshot_labels  = isset( $snapshot['labels'] ) && is_array( $snapshot['labels'] ) ? $snapshot['labels'] : array();
+        $fields           = array();
+        $render           = array();
+        $handled          = array();
+
+        if ( empty( $entry ) && ! empty( $snapshot_entry ) ) {
+            $entry = $snapshot_entry;
+        }
 
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
@@ -442,7 +451,13 @@ class Benana_Automation_Shortcodes {
                         $handled[] = $input_id;
                         $value     = $entry[ $input_id ] ?? '';
                         $label     = $input['label'] ?? GFCommon::get_label( $field, $input_id );
-                        $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
+                        if ( isset( $snapshot_labels[ $input_id ] ) && ( '' === trim( (string) $label ) || $input_id === trim( (string) $label ) ) ) {
+                            $label = $snapshot_labels[ $input_id ];
+                        }
+                        $display = GFCommon::get_lead_field_display( $field, $value, $currency );
+                        if ( '' === trim( wp_strip_all_tags( (string) $display ) ) && isset( $snapshot_display[ $input_id ] ) ) {
+                            $display = $snapshot_display[ $input_id ];
+                        }
 
                         $render[] = array(
                             'key'   => $input_id,
@@ -454,7 +469,13 @@ class Benana_Automation_Shortcodes {
                     $handled[] = $field_id;
                     $value     = $entry[ $field_id ] ?? '';
                     $label     = GFCommon::get_label( $field );
-                    $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
+                    if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || $field_id === trim( (string) $label ) ) ) {
+                        $label = $snapshot_labels[ $field_id ];
+                    }
+                    $display = GFCommon::get_lead_field_display( $field, $value, $currency );
+                    if ( '' === trim( wp_strip_all_tags( (string) $display ) ) && isset( $snapshot_display[ $field_id ] ) ) {
+                        $display = $snapshot_display[ $field_id ];
+                    }
 
                     $render[] = array(
                         'key'   => $field_id,
@@ -473,8 +494,8 @@ class Benana_Automation_Shortcodes {
 
             $render[] = array(
                 'key'   => $entry_id,
-                'label' => $entry_id,
-                'value' => $this->decode_unicode_literals( $raw_value ),
+                'label' => $snapshot_labels[ $entry_id ] ?? $entry_id,
+                'value' => $this->decode_unicode_literals( $snapshot_display[ $entry_id ] ?? $raw_value ),
             );
         }
 

@@ -683,6 +683,27 @@ class Benana_Automation_Shortcodes {
                         }
                     }
                 }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->decode_unicode_literals( $display ),
+                );
+                $handled[] = $field_id;
             }
         }
 

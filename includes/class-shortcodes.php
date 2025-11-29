@@ -443,11 +443,13 @@ class Benana_Automation_Shortcodes {
             }
         }
 
-        $field_ids = array_unique( $field_ids );
-
-        if ( empty( $field_ids ) && ! empty( $snapshot['entry'] ) ) {
-            $field_ids = array_keys( $snapshot['entry'] );
+        if ( ! empty( $snapshot['entry'] ) ) {
+            foreach ( array_keys( $snapshot['entry'] ) as $entry_key ) {
+                $field_ids[] = (string) $entry_key;
+            }
         }
+
+        $field_ids = array_unique( $field_ids );
 
         foreach ( $field_ids as $fid ) {
             $field_id     = (string) $fid;

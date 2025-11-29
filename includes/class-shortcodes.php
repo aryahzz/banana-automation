@@ -423,7 +423,7 @@ class Benana_Automation_Shortcodes {
         $display_map   = $snapshot['display'] ?? array();
         $label_map     = $snapshot['labels'] ?? array();
 
-        $field_ids = array();
+        $field_ids = array_keys( $display_map );
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
@@ -441,15 +441,9 @@ class Benana_Automation_Shortcodes {
                     }
                 }
             }
-        } elseif ( ! empty( $snapshot['display'] ) ) {
-            $field_ids = array_keys( $snapshot['display'] );
         }
 
         $field_ids = array_unique( $field_ids );
-
-        if ( empty( $field_ids ) && ! empty( $snapshot['display'] ) ) {
-            $field_ids = array_keys( $snapshot['display'] );
-        }
 
         if ( empty( $field_ids ) && ! empty( $snapshot['entry'] ) ) {
             $field_ids = array_keys( $snapshot['entry'] );
@@ -461,8 +455,8 @@ class Benana_Automation_Shortcodes {
             $raw          = $this->resolve_raw_value( $field_id, $entry, $snapshot );
             $resolved_label = $label_map[ $field_id ] ?? $this->resolve_field_label( $field_id, $form, $label_map );
 
-            if ( $this->is_empty_value( $value ) || $this->is_default_value( $field_id, $raw, $field_map ) ) {
-                continue; // فیلد خالی یا مقدار پیش‌فرض نمایش داده نشود.
+            if ( $this->is_empty_value( $value ) ) {
+                continue; // فیلد خالی نمایش داده نشود.
             }
 
             $render_fields[] = array(

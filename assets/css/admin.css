@@ -81,3 +81,124 @@
 .report-card strong {
     font-size: 22px;
 }
+
+.table-banana {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-banana th,
+.table-banana td {
+    padding: 10px;
+    text-align: right;
+}
+
+.table-banana tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.table-banana .status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.table-banana .status-new,
+.table-banana .status-none {
+    background: #f6f6f6;
+    color: #555;
+}
+
+.table-banana .status-accepted {
+    background: #e8fff2;
+    color: #0a8f3c;
+}
+
+.table-banana .status-file_uploaded {
+    background: #fff7e6;
+    color: #b26b00;
+}
+
+.table-banana .status-completed {
+    background: #e6f1ff;
+    color: #0a4fb2;
+}
+
+.benana-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.benana-chart-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.benana-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.benana-bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.benana-bar-label {
+    font-weight: 600;
+}
+
+.benana-bar-track {
+    position: relative;
+    background: #f1f1f1;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 12px;
+}
+
+.benana-bar-fill {
+    display: block;
+    height: 100%;
+    background: #d9e6ff;
+}
+
+.benana-bar-track .benana-bar-count {
+    position: absolute;
+    right: 8px;
+    top: -18px;
+    font-size: 12px;
+    color: #333;
+}
+
+.benana-bar-fill.status-new { background: #f0f0f0; }
+.benana-bar-fill.status-accepted { background: #c6f3d5; }
+.benana-bar-fill.status-file_uploaded { background: #ffe6c4; }
+.benana-bar-fill.status-completed { background: #c9ddff; }
+
+.benana-progress-track {
+    background: #f1f1f1;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 14px;
+    margin-top: 6px;
+}
+
+.benana-progress-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #0a8f3c, #00b16a);
+}
+
+.benana-progress-label {
+    margin-top: 6px;
+    font-weight: 600;
+}

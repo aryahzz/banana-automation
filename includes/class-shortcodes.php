@@ -393,16 +393,25 @@ class Benana_Automation_Shortcodes {
                     return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
                 }
 
-                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
-                    foreach ( $field->get_entry_inputs() as $input ) {
-                        $iid = (string) ( $input['id'] ?? '' );
-                        if ( (string) $iid === (string) $field_id ) {
-                            if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
-                                return $input['name'];
-                            }
+                $inputs = array();
+                if ( is_object( $field ) ) {
+                    if ( is_array( $field->get_entry_inputs() ) ) {
+                        $inputs = $field->get_entry_inputs();
+                    } elseif ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                        $inputs = $field->inputs;
+                    }
+                } elseif ( is_array( $field ) && isset( $field['inputs'] ) && is_array( $field['inputs'] ) ) {
+                    $inputs = $field['inputs'];
+                }
 
-                            return $input['label'] ?? $field_id;
+                foreach ( $inputs as $input ) {
+                    $iid = (string) ( $input['id'] ?? '' );
+                    if ( (string) $iid === (string) $field_id ) {
+                        if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
+                            return $input['name'];
                         }
+
+                        return $input['label'] ?? $field_id;
                     }
                 }
             }

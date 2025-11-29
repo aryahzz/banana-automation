@@ -420,6 +420,8 @@ class Benana_Automation_Shortcodes {
     private function prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status ) {
         $render_fields = array();
         $field_map     = $this->map_form_fields( $form );
+        $display_map   = $snapshot['display'] ?? array();
+        $label_map     = $snapshot['labels'] ?? array();
 
         $field_ids = array();
         if ( ! empty( $form['fields'] ) ) {
@@ -454,13 +456,10 @@ class Benana_Automation_Shortcodes {
         }
 
         foreach ( $field_ids as $fid ) {
-            if ( 'new' === $status && in_array( (string) $fid, $hidden_before, true ) ) {
-                continue;
-            }
-
-            $value    = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
-            $raw      = $this->resolve_raw_value( $fid, $entry, $snapshot );
-            $field_id = (string) $fid;
+            $field_id     = (string) $fid;
+            $value        = array_key_exists( $field_id, $display_map ) ? $display_map[ $field_id ] : $this->resolve_field_value( $field_id, $entry, $form, $display_map );
+            $raw          = $this->resolve_raw_value( $field_id, $entry, $snapshot );
+            $resolved_label = $label_map[ $field_id ] ?? $this->resolve_field_label( $field_id, $form, $label_map );
 
             if ( $this->is_empty_value( $value ) || $this->is_default_value( $field_id, $raw, $field_map ) ) {
                 continue; // فیلد خالی یا مقدار پیش‌فرض نمایش داده نشود.
@@ -468,7 +467,7 @@ class Benana_Automation_Shortcodes {
 
             $render_fields[] = array(
                 'key'   => $field_id,
-                'label' => $this->resolve_field_label( $field_id, $form, $snapshot['labels'] ),
+                'label' => $resolved_label,
                 'value' => $value,
             );
         }

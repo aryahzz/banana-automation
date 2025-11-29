@@ -4,6 +4,8 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_inbox', array( $this, 'inbox_shortcode' ) );
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
+        add_shortcode( 'benana_stats', array( $this, 'stats_shortcode' ) );
+        add_shortcode( 'benana_pending_stats', array( $this, 'pending_stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
         add_action( 'template_redirect', array( $this, 'handle_actions' ) );
@@ -203,6 +205,7 @@ class Benana_Automation_Shortcodes {
             'post_type'  => 'project',
             's'          => $search,
             'meta_query' => $meta_query,
+            'posts_per_page' => -1,
         );
         $projects       = get_posts( $args );
         $status_labels  = array(
@@ -244,9 +247,10 @@ class Benana_Automation_Shortcodes {
             return '<p class="noaccess-error-benana" >دسترسی به این پروژه ندارید.</p>';
         }
 
-        $entry   = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
-        $form_id = get_post_meta( $project_id, 'gf_form_id', true );
-        $status  = get_post_meta( $project_id, 'project_status', true );
+        $entry    = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
+        $snapshot = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
+        $form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+        $status   = get_post_meta( $project_id, 'project_status', true );
 
         if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
             $form_id = $entry['form_id'];
@@ -261,8 +265,8 @@ class Benana_Automation_Shortcodes {
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = $this->prepare_fields_for_display( $form, $entry );
-        $entry_date    = $this->format_entry_datetime( $entry, $project_id );
+        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $accepted );
+        $entry_date    = $this->format_entry_datetime( empty( $entry ) ? $snapshot['entry'] : $entry, $project_id );
 
         $view = array(
             'project'       => $project,
@@ -384,15 +388,28 @@ class Benana_Automation_Shortcodes {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
-                    return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
+                    return $this->get_field_display_label( $field, $field_id, $form, $label_map );
                 }
 
-                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
-                    foreach ( $field->get_entry_inputs() as $input ) {
-                        $iid = (string) ( $input['id'] ?? '' );
-                        if ( (string) $iid === (string) $field_id ) {
-                            return $input['label'] ?? $field_id;
+                $inputs = array();
+                if ( is_object( $field ) ) {
+                    if ( is_callable( array( $field, 'get_entry_inputs' ) ) && is_array( $field->get_entry_inputs() ) ) {
+                        $inputs = $field->get_entry_inputs();
+                    } elseif ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                        $inputs = $field->inputs;
+                    }
+                } elseif ( is_array( $field ) && isset( $field['inputs'] ) && is_array( $field['inputs'] ) ) {
+                    $inputs = $field['inputs'];
+                }
+
+                foreach ( $inputs as $input ) {
+                    $iid = (string) ( $input['id'] ?? '' );
+                    if ( (string) $iid === (string) $field_id ) {
+                        if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
+                            return $input['name'];
                         }
+
+                        return $input['label'] ?? $field_id;
                     }
                 }
             }
@@ -405,12 +422,137 @@ class Benana_Automation_Shortcodes {
         return $field_id;
     }
 
-    private function prepare_fields_for_display( $form, $entry ) {
-        $entry   = is_array( $entry ) ? $entry : (array) $entry;
-        $form    = is_array( $form ) ? $form : array();
-        $fields  = array();
-        $render  = array();
-        $handled = array();
+    private function resolve_field_name_property( $field ) {
+        if ( is_object( $field ) ) {
+            if ( isset( $field->inputName ) && '' !== trim( (string) $field->inputName ) ) {
+                return $field->inputName;
+            }
+
+            if ( isset( $field->name ) && '' !== trim( (string) $field->name ) ) {
+                return $field->name;
+            }
+
+            if ( is_callable( array( $field, 'get_field_input_name' ) ) ) {
+                $name = $field->get_field_input_name();
+                if ( '' !== trim( (string) $name ) ) {
+                    return $name;
+                }
+            }
+        }
+
+        if ( is_array( $field ) ) {
+            if ( isset( $field['inputName'] ) && '' !== trim( (string) $field['inputName'] ) ) {
+                return $field['inputName'];
+            }
+
+            if ( isset( $field['name'] ) && '' !== trim( (string) $field['name'] ) ) {
+                return $field['name'];
+            }
+        }
+
+        return '';
+    }
+
+    private function get_field_display_label( $field, $field_id, $form = array(), $label_map = array() ) {
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
+        }
+
+        $input = ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) ? GFFormsModel::get_input( $form, $field_id ) : false;
+        if ( is_array( $input ) ) {
+            if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
+                return $input['name'];
+            }
+
+            if ( '' !== trim( (string) ( $input['label'] ?? '' ) ) ) {
+                return $input['label'];
+            }
+        }
+
+        if ( class_exists( 'GFFormsModel' ) && is_object( $field ) ) {
+            $label = GFFormsModel::get_label( $field, $field_id, false, true );
+            if ( '' !== trim( (string) $label ) && (string) $label !== (string) $field_id ) {
+                return $label;
+            }
+        }
+
+        $name = $this->resolve_field_name_property( $field );
+        if ( '' !== trim( (string) $name ) ) {
+            return $name;
+        }
+
+        if ( class_exists( 'GFCommon' ) && is_object( $field ) ) {
+            $label = GFCommon::get_label( $field, $field_id, false, true );
+            if ( '' !== trim( (string) $label ) ) {
+                return $label;
+            }
+        }
+
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
+        }
+
+        return is_object( $field ) ? ( $field->label ?? $field_id ) : ( $field['label'] ?? $field_id );
+    }
+
+    private function get_field_display_html( $field, $value, $entry, $form ) {
+        if ( ! class_exists( 'GFCommon' ) || ! is_object( $field ) ) {
+            return $value;
+        }
+
+        $currency = is_array( $entry ) ? ( $entry['currency'] ?? '' ) : '';
+
+        $display = GFCommon::get_lead_field_display( $field, $value, $currency, true, 'html' );
+        $display = apply_filters( 'gform_entry_field_value', $display, $field, $entry, $form );
+
+        return $display;
+    }
+
+    private function should_hide_before_acceptance( $field_id, $field, $protected_fields ) {
+        if ( in_array( (string) $field_id, $protected_fields, true ) ) {
+            return true;
+        }
+
+        $inputs = array();
+
+        if ( is_object( $field ) ) {
+            if ( is_callable( array( $field, 'get_entry_inputs' ) ) && is_array( $field->get_entry_inputs() ) ) {
+                $inputs = $field->get_entry_inputs();
+            } elseif ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                $inputs = $field->inputs;
+            }
+        } elseif ( is_array( $field ) && isset( $field['inputs'] ) ) {
+            $inputs = $field['inputs'];
+        }
+
+        foreach ( $inputs as $input ) {
+            if ( in_array( (string) ( $input['id'] ?? '' ), $protected_fields, true ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function prepare_fields_for_display( $form, $entry, $snapshot = array(), $is_accepted = false ) {
+        $entry            = is_array( $entry ) ? $entry : (array) $entry;
+        $form             = is_array( $form ) ? $form : array();
+        $snapshot         = is_array( $snapshot ) ? $snapshot : array();
+        $snapshot_entry   = isset( $snapshot['entry'] ) && is_array( $snapshot['entry'] ) ? $snapshot['entry'] : array();
+        $snapshot_display = isset( $snapshot['display'] ) && is_array( $snapshot['display'] ) ? $snapshot['display'] : array();
+        $snapshot_labels  = isset( $snapshot['labels'] ) && is_array( $snapshot['labels'] ) ? $snapshot['labels'] : array();
+        $label_map        = $snapshot_labels;
+        $fields           = array();
+        $render           = array();
+        $handled          = array();
+        $lead_for_filter  = ! empty( $entry ) ? $entry : $snapshot_entry;
+        $display_empty    = apply_filters( 'gform_entry_detail_grid_display_empty_fields', false, $form, $lead_for_filter );
+
+        $protected_fields = array( '94', '17', '28.1', '101' );
+
+        if ( empty( $entry ) && ! empty( $snapshot_entry ) ) {
+            $entry = $snapshot_entry;
+        }
 
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
@@ -428,57 +570,186 @@ class Benana_Automation_Shortcodes {
 
         if ( class_exists( 'GFCommon' ) ) {
             foreach ( $fields as $field ) {
-                $inputs   = is_callable( array( $field, 'get_entry_inputs' ) ) ? $field->get_entry_inputs() : null;
                 $field_id = (string) $field->id;
                 $currency = $entry['currency'] ?? '';
 
-                if ( is_array( $inputs ) && ! empty( $inputs ) ) {
-                    foreach ( $inputs as $input ) {
-                        $input_id = (string) ( $input['id'] ?? '' );
-                        if ( '' === $input_id ) {
-                            continue;
-                        }
+                $input_type = is_callable( array( $field, 'get_input_type' ) ) ? $field->get_input_type() : '';
+                if ( in_array( $input_type, array( 'section', 'captcha', 'html', 'password', 'page' ), true ) ) {
+                    continue;
+                }
 
-                        $handled[] = $input_id;
-                        $value     = $entry[ $input_id ] ?? '';
-                        $label     = $input['label'] ?? GFCommon::get_label( $field, $input_id );
-                        $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_id, $field, $protected_fields ) ) {
+                    continue;
+                }
 
-                        $render[] = array(
-                            'key'   => $input_id,
-                            'label' => $label,
-                            'value' => $this->decode_unicode_literals( $display ),
-                        );
+                if ( is_array( $field->fields ) ) {
+                    $field->nestingLevel = 0;
+                }
+
+                $value = class_exists( 'RGFormsModel' ) ? RGFormsModel::get_lead_field_value( $entry, $field ) : rgar( $entry, $field_id );
+
+                $display = $this->get_field_display_html( $field, $value, $entry, $form );
+
+                if ( $this->is_empty_value( $display ) ) {
+                    if ( isset( $snapshot_display[ $field_id ] ) ) {
+                        $display = $snapshot_display[ $field_id ];
+                    } elseif ( isset( $snapshot_entry[ $field_id ] ) ) {
+                        $display = $snapshot_entry[ $field_id ];
+                    } elseif ( isset( $entry[ $field_id ] ) ) {
+                        $display = $entry[ $field_id ];
                     }
-                } else {
-                    $handled[] = $field_id;
-                    $value     = $entry[ $field_id ] ?? '';
-                    $label     = GFCommon::get_label( $field );
-                    $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
 
-                    $render[] = array(
-                        'key'   => $field_id,
-                        'label' => $label,
-                        'value' => $this->decode_unicode_literals( $display ),
-                    );
+                    $display = $this->get_field_display_html( $field, $display, $entry, $form );
+                }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display ) ),
+                );
+                $handled[] = $field_id;
+
+                if ( is_object( $field ) && isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                    foreach ( $field->inputs as $input ) {
+                        if ( isset( $input['id'] ) ) {
+                            $handled[] = (string) $input['id'];
+                        }
+                    }
                 }
             }
         }
 
-        foreach ( $entry as $entry_key => $raw_value ) {
-            $entry_id = (string) $entry_key;
-            if ( in_array( $entry_id, $handled, true ) ) {
-                continue;
-            }
+        if ( empty( $render ) && ! empty( $entry ) ) {
+            foreach ( $entry as $field_id => $display_value ) {
+                $field_key = (string) $field_id;
+                if ( in_array( $field_key, $handled, true ) ) {
+                    continue;
+                }
 
-            $render[] = array(
-                'key'   => $entry_id,
-                'label' => $entry_id,
-                'value' => $this->decode_unicode_literals( $raw_value ),
-            );
+                if ( ! preg_match( '/^\d+(?:\.\d+)?$/', $field_key ) ) {
+                    continue;
+                }
+
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    if ( isset( $snapshot_display[ $field_key ] ) ) {
+                        $display_value = $snapshot_display[ $field_key ];
+                    } elseif ( isset( $snapshot_entry[ $field_key ] ) ) {
+                        $display_value = $snapshot_entry[ $field_key ];
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
+                if ( '' === trim( (string) $label ) ) {
+                    continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
+                }
+
+                $render[] = array(
+                    'key'   => $field_key,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
+                );
+            }
+        }
+
+        if ( empty( $render ) && ! empty( $snapshot_display ) ) {
+            foreach ( $snapshot_display as $field_id => $display_value ) {
+                $field_key = (string) $field_id;
+                if ( in_array( $field_key, $handled, true ) ) {
+                    continue;
+                }
+
+                if ( ! preg_match( '/^\d+(?:\.\d+)?$/', $field_key ) ) {
+                    continue;
+                }
+
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
+                if ( '' === trim( (string) $label ) ) {
+                    continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
+                }
+
+                $render[] = array(
+                    'key'   => $field_key,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
+                );
+            }
         }
 
         return $render;
+    }
+
+    private function ensure_html_value( $value ) {
+        if ( is_array( $value ) ) {
+            return array_map( array( $this, 'ensure_html_value' ), $value );
+        }
+
+        if ( ! is_string( $value ) ) {
+            return $value;
+        }
+
+        if ( false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) ) {
+            return $value;
+        }
+
+        $trimmed = trim( $value );
+
+        if ( filter_var( $trimmed, FILTER_VALIDATE_URL ) ) {
+            return '<a href="' . esc_url( $trimmed ) . '" target="_blank" rel="noreferrer noopener">' . esc_html( $trimmed ) . '</a>';
+        }
+
+        return $value;
     }
 
     private function map_form_fields( $form ) {
@@ -617,27 +888,47 @@ class Benana_Automation_Shortcodes {
     }
 
     public function stats_shortcode( $atts ) {
-        $atts    = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
-        $user_id = get_current_user_id();
-        $count   = 0;
-        if ( $atts['type'] === 'completed_count' ) {
-            $args  = array(
-                'post_type'  => 'project',
-                'meta_query' => array(
+        $atts  = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
+        $count = 0;
+        if ( $atts['type'] === 'pending_count' ) {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
                     array(
-                        'key'   => 'accepted_by',
-                        'value' => $user_id,
+                        'key'   => 'project_status',
+                        'value' => 'new',
                     ),
+                ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
+            );
+            $query = new WP_Query( $args );
+            $count = $query->post_count;
+        }
+        if ( $atts['type'] === 'completed_count' ) {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
                     array(
                         'key'   => 'project_status',
                         'value' => 'completed',
                     ),
                 ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
             );
             $query = new WP_Query( $args );
-            $count = $query->found_posts;
+            $count = $query->post_count;
         }
-        return '<div class="benana-stats">پروژه‌های تکمیل‌شده: ' . intval( $count ) . '</div>';
+        return (string) intval( $count );
+    }
+
+    public function pending_stats_shortcode( $atts ) {
+        $atts         = (array) $atts;
+        $atts['type'] = 'pending_count';
+        return $this->stats_shortcode( $atts );
     }
 
     public function availability_shortcode() {

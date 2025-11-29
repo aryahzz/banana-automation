@@ -153,10 +153,6 @@ class Benana_Automation_Shortcodes {
 
         $value = count( $uploaded_urls ) > 1 ? wp_json_encode( $uploaded_urls ) : $uploaded_urls[0];
 
-        $snapshot    = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
-        $entry_merge = array_merge( $snapshot['entry'], $entry );
-        $entry_merge[ $upload_field ] = $value;
-
         if ( ! empty( $entry ) && class_exists( 'GFAPI' ) ) {
             $entry[ $upload_field ] = $value;
             $update_result          = GFAPI::update_entry( $entry );
@@ -165,8 +161,6 @@ class Benana_Automation_Shortcodes {
                 return $result;
             }
         }
-
-        Benana_Automation_Project_Handler::store_entry_snapshot( $project_id, $form, $entry_merge );
         Benana_Automation_Project_Handler::upload_file( $project_id, $user_id, $uploaded_urls );
 
         $result['status']  = 'uploaded';
@@ -221,8 +215,7 @@ class Benana_Automation_Shortcodes {
 
         $entry_dates = array();
         foreach ( $projects as $project ) {
-            $snapshot                 = Benana_Automation_Project_Handler::get_entry_snapshot( $project->ID );
-            $entry_dates[ $project->ID ] = $this->format_entry_datetime( $snapshot['entry'], $project->ID );
+            $entry_dates[ $project->ID ] = $this->format_entry_datetime( Benana_Automation_Project_Handler::get_entry_for_project( $project->ID ), $project->ID );
         }
         ob_start();
         include BENANA_AUTOMATION_PATH . 'templates/inbox.php';
@@ -251,29 +244,25 @@ class Benana_Automation_Shortcodes {
             return '<p>دسترسی به این پروژه ندارید.</p>';
         }
 
-        $entry         = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
-        $snapshot      = Benana_Automation_Project_Handler::get_entry_snapshot( $project_id );
-        $form_id       = get_post_meta( $project_id, 'gf_form_id', true );
-        $status        = get_post_meta( $project_id, 'project_status', true );
+        $entry   = Benana_Automation_Project_Handler::get_entry_for_project( $project_id );
+        $form_id = get_post_meta( $project_id, 'gf_form_id', true );
+        $status  = get_post_meta( $project_id, 'project_status', true );
 
         if ( empty( $form_id ) && ! empty( $entry['form_id'] ) ) {
             $form_id = $entry['form_id'];
         }
 
         $form = ( function_exists( 'GFAPI' ) && ! empty( $form_id ) ) ? GFAPI::get_form( $form_id ) : array();
-        $settings      = Benana_Automation_Settings::get_settings();
-        $hidden_before = array();
-        $upload_field  = '';
+        $settings     = Benana_Automation_Settings::get_settings();
+        $upload_field = '';
         if ( isset( $settings['gravity_forms'][ $form_id ] ) ) {
-            $gf_settings   = $settings['gravity_forms'][ $form_id ];
-            $hidden_before = $this->parse_field_list( $gf_settings['before_accept'] ?? '' );
-            $upload_field  = $gf_settings['file_field'] ?? ( $gf_settings['upload_field'] ?? '' );
+            $gf_settings  = $settings['gravity_forms'][ $form_id ];
+            $upload_field = $gf_settings['file_field'] ?? ( $gf_settings['upload_field'] ?? '' );
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $merged_entry  = array_merge( $snapshot['entry'], $entry );
-        $render_fields = $this->prepare_fields_for_display( $form, $merged_entry, $snapshot, $hidden_before, $status );
-        $entry_date    = $this->format_entry_datetime( $snapshot['entry'], $project_id );
+        $render_fields = $this->prepare_fields_for_display( $form, $entry );
+        $entry_date    = $this->format_entry_datetime( $entry, $project_id );
 
         $view = array(
             'project'       => $project,
@@ -286,7 +275,6 @@ class Benana_Automation_Shortcodes {
             'province'      => get_post_meta( $project_id, 'project_province_id', true ),
             'city'          => get_post_meta( $project_id, 'project_city_id', true ),
             'nonce'         => wp_create_nonce( 'benana_action_' . $project_id ),
-            'snapshot'      => $snapshot,
             'action_msg'    => $action_msg,
             'action_text'   => $action_txt,
             'upload_field'  => $upload_field,
@@ -417,9 +405,10 @@ class Benana_Automation_Shortcodes {
         return $field_id;
     }
 
-    private function prepare_fields_for_display( $form, $entry, $snapshot, $hidden_before, $status ) {
+    private function prepare_fields_for_display( $form, $entry ) {
         $render_fields = array();
         $field_map     = $this->map_form_fields( $form );
+        $label_map     = array();
 
         $field_ids = array();
         if ( ! empty( $form['fields'] ) ) {
@@ -439,55 +428,27 @@ class Benana_Automation_Shortcodes {
                     }
                 }
             }
-        } elseif ( ! empty( $snapshot['display'] ) ) {
-            $field_ids = array_keys( $snapshot['display'] );
+        }
+
+        foreach ( array_keys( (array) $entry ) as $entry_key ) {
+            $field_ids[] = (string) $entry_key;
         }
 
         $field_ids = array_unique( $field_ids );
 
-        if ( empty( $field_ids ) && ! empty( $snapshot['display'] ) ) {
-            $field_ids = array_keys( $snapshot['display'] );
-        }
-
-        if ( empty( $field_ids ) && ! empty( $snapshot['entry'] ) ) {
-            $field_ids = array_keys( $snapshot['entry'] );
-        }
-
         foreach ( $field_ids as $fid ) {
-            if ( 'new' === $status && in_array( (string) $fid, $hidden_before, true ) ) {
-                continue;
-            }
-
-            $value    = $this->resolve_field_value( $fid, $entry, $form, $snapshot['display'] );
-            $raw      = $this->resolve_raw_value( $fid, $entry, $snapshot );
-            $field_id = (string) $fid;
-
-            if ( $this->is_empty_value( $value ) || $this->is_default_value( $field_id, $raw, $field_map ) ) {
-                continue; // فیلد خالی یا مقدار پیش‌فرض نمایش داده نشود.
-            }
+            $field_id      = (string) $fid;
+            $value         = $this->resolve_field_value( $field_id, $entry, $form, array() );
+            $resolved_label = $label_map[ $field_id ] ?? $this->resolve_field_label( $field_id, $form, $label_map );
 
             $render_fields[] = array(
                 'key'   => $field_id,
-                'label' => $this->resolve_field_label( $field_id, $form, $snapshot['labels'] ),
+                'label' => $resolved_label,
                 'value' => $value,
             );
         }
 
         return $render_fields;
-    }
-
-    private function resolve_raw_value( $token, $entry, $snapshot ) {
-        $clean = trim( $token, '{}' );
-
-        if ( isset( $entry[ $clean ] ) ) {
-            return $entry[ $clean ];
-        }
-
-        if ( isset( $snapshot['entry'][ $clean ] ) ) {
-            return $snapshot['entry'][ $clean ];
-        }
-
-        return '';
     }
 
     private function map_form_fields( $form ) {

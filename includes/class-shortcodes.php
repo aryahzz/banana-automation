@@ -416,6 +416,8 @@ class Benana_Automation_Shortcodes {
         $fields           = array();
         $render           = array();
         $handled          = array();
+        $lead_for_filter  = ! empty( $entry ) ? $entry : $snapshot_entry;
+        $display_empty    = apply_filters( 'gform_entry_detail_grid_display_empty_fields', false, $form, $lead_for_filter );
 
         if ( empty( $entry ) && ! empty( $snapshot_entry ) ) {
             $entry = $snapshot_entry;
@@ -454,15 +456,17 @@ class Benana_Automation_Shortcodes {
                 $display = GFCommon::get_lead_field_display( $field, $value, $currency );
                 $display = apply_filters( 'gform_entry_field_value', $display, $field, $entry, $form );
 
-                if ( '' === trim( wp_strip_all_tags( (string) $display ) ) ) {
+                if ( $this->is_empty_value( $display ) ) {
                     if ( isset( $snapshot_display[ $field_id ] ) ) {
                         $display = $snapshot_display[ $field_id ];
                     } elseif ( isset( $snapshot_entry[ $field_id ] ) ) {
                         $display = $snapshot_entry[ $field_id ];
+                    } elseif ( isset( $entry[ $field_id ] ) ) {
+                        $display = $entry[ $field_id ];
                     }
                 }
 
-                if ( $this->is_empty_value( $display ) ) {
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
                     continue;
                 }
 
@@ -471,12 +475,56 @@ class Benana_Automation_Shortcodes {
                     $label = $snapshot_labels[ $field_id ];
                 }
 
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
                 $render[]  = array(
                     'key'   => $field_id,
                     'label' => $label,
                     'value' => $this->decode_unicode_literals( $display ),
                 );
                 $handled[] = $field_id;
+            }
+        }
+
+        if ( empty( $render ) && ! empty( $entry ) ) {
+            foreach ( $entry as $field_id => $display_value ) {
+                $field_key = (string) $field_id;
+                if ( in_array( $field_key, $handled, true ) ) {
+                    continue;
+                }
+
+                if ( ! preg_match( '/^\d+(?:\.\d+)?$/', $field_key ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    if ( isset( $snapshot_display[ $field_key ] ) ) {
+                        $display_value = $snapshot_display[ $field_key ];
+                    } elseif ( isset( $snapshot_entry[ $field_key ] ) ) {
+                        $display_value = $snapshot_entry[ $field_key ];
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $snapshot_labels[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $snapshot_labels );
+                if ( '' === trim( (string) $label ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
+                }
+
+                $render[] = array(
+                    'key'   => $field_key,
+                    'label' => $label,
+                    'value' => $this->decode_unicode_literals( $display_value ),
+                );
             }
         }
 
@@ -491,13 +539,17 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                if ( $this->is_empty_value( $display_value ) ) {
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
                     continue;
                 }
 
-                $label = $snapshot_labels[ $field_key ] ?? '';
+                $label = $snapshot_labels[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $snapshot_labels );
                 if ( '' === trim( (string) $label ) ) {
                     continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
                 }
 
                 $render[] = array(

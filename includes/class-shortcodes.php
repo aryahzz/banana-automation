@@ -60,6 +60,7 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
         add_shortcode( 'benana_stats', array( $this, 'stats_shortcode' ) );
+        add_shortcode( 'benana_pending_stats', array( $this, 'pending_stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
         add_action( 'template_redirect', array( $this, 'handle_actions' ) );
@@ -259,6 +260,7 @@ class Benana_Automation_Shortcodes {
             'post_type'  => 'project',
             's'          => $search,
             'meta_query' => $meta_query,
+            'posts_per_page' => -1,
         );
         $projects       = get_posts( $args );
         $status_labels  = array(
@@ -318,7 +320,7 @@ class Benana_Automation_Shortcodes {
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $accepted, $this->field_label_overrides );
+        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $accepted );
         $entry_date    = $this->format_entry_datetime( empty( $entry ) ? $snapshot['entry'] : $entry, $project_id );
 
         $view = array(
@@ -587,14 +589,14 @@ class Benana_Automation_Shortcodes {
         return false;
     }
 
-    private function prepare_fields_for_display( $form, $entry, $snapshot = array(), $is_accepted = false, $label_overrides = array() ) {
+    private function prepare_fields_for_display( $form, $entry, $snapshot = array(), $is_accepted = false ) {
         $entry            = is_array( $entry ) ? $entry : (array) $entry;
         $form             = is_array( $form ) ? $form : array();
         $snapshot         = is_array( $snapshot ) ? $snapshot : array();
         $snapshot_entry   = isset( $snapshot['entry'] ) && is_array( $snapshot['entry'] ) ? $snapshot['entry'] : array();
         $snapshot_display = isset( $snapshot['display'] ) && is_array( $snapshot['display'] ) ? $snapshot['display'] : array();
         $snapshot_labels  = isset( $snapshot['labels'] ) && is_array( $snapshot['labels'] ) ? $snapshot['labels'] : array();
-        $label_map        = array_merge( $label_overrides, $snapshot_labels );
+        $label_map        = $snapshot_labels;
         $fields           = array();
         $render           = array();
         $handled          = array();
@@ -657,6 +659,31 @@ class Benana_Automation_Shortcodes {
 
                 if ( $this->is_empty_value( $display ) && ! $display_empty ) {
                     continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display ) ),
+                );
+                $handled[] = $field_id;
+
+                if ( is_object( $field ) && isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                    foreach ( $field->inputs as $input ) {
+                        if ( isset( $input['id'] ) ) {
+                            $handled[] = (string) $input['id'];
+                        }
+                    }
                 }
 
                 $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
@@ -965,10 +992,40 @@ class Benana_Automation_Shortcodes {
         $atts    = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
         $user_id = get_current_user_id();
         $count   = 0;
+        if ( $atts['type'] === 'pending_count' ) {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
+                    'relation' => 'AND',
+                    array(
+                        'relation' => 'OR',
+                        array(
+                            'key'     => 'assigned_users',
+                            'value'   => $user_id,
+                            'compare' => 'LIKE',
+                        ),
+                        array(
+                            'key'   => 'accepted_by',
+                            'value' => $user_id,
+                        ),
+                    ),
+                    array(
+                        'key'   => 'project_status',
+                        'value' => 'new',
+                    ),
+                ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
+            );
+            $query = new WP_Query( $args );
+            $count = $query->post_count;
+        }
         if ( $atts['type'] === 'completed_count' ) {
-            $args  = array(
-                'post_type'  => 'project',
-                'meta_query' => array(
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
                     array(
                         'key'   => 'accepted_by',
                         'value' => $user_id,
@@ -978,11 +1035,19 @@ class Benana_Automation_Shortcodes {
                         'value' => 'completed',
                     ),
                 ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
             );
             $query = new WP_Query( $args );
-            $count = $query->found_posts;
+            $count = $query->post_count;
         }
-        return '<div class="benana-stats">پروژه‌های تکمیل‌شده: ' . intval( $count ) . '</div>';
+        return (string) intval( $count );
+    }
+
+    public function pending_stats_shortcode( $atts ) {
+        $atts         = (array) $atts;
+        $atts['type'] = 'pending_count';
+        return $this->stats_shortcode( $atts );
     }
 
     public function availability_shortcode() {

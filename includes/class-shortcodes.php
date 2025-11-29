@@ -406,51 +406,79 @@ class Benana_Automation_Shortcodes {
     }
 
     private function prepare_fields_for_display( $form, $entry ) {
-        $entry         = is_array( $entry ) ? $entry : (array) $entry;
-        $form          = is_array( $form ) ? $form : array();
-        $render_fields = array();
-        $label_map     = array();
-        $display_map   = array();
+        $entry   = is_array( $entry ) ? $entry : (array) $entry;
+        $form    = is_array( $form ) ? $form : array();
+        $fields  = array();
+        $render  = array();
+        $handled = array();
 
-        $field_ids = array_keys( $display_map );
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
-                $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
-                if ( '' === $fid ) {
+                if ( is_array( $field ) && class_exists( 'GF_Fields' ) ) {
+                    $field = GF_Fields::create( $field );
+                }
+
+                if ( ! is_object( $field ) ) {
                     continue;
                 }
-                $field_ids[] = (string) $fid;
 
-                if ( is_object( $field ) && is_array( $field->get_entry_inputs() ) ) {
-                    foreach ( $field->get_entry_inputs() as $input ) {
-                        $iid = (string) ( $input['id'] ?? '' );
-                        if ( '' !== $iid ) {
-                            $field_ids[] = $iid;
+                $fields[] = $field;
+            }
+        }
+
+        if ( class_exists( 'GFCommon' ) ) {
+            foreach ( $fields as $field ) {
+                $inputs   = is_callable( array( $field, 'get_entry_inputs' ) ) ? $field->get_entry_inputs() : null;
+                $field_id = (string) $field->id;
+                $currency = $entry['currency'] ?? '';
+
+                if ( is_array( $inputs ) && ! empty( $inputs ) ) {
+                    foreach ( $inputs as $input ) {
+                        $input_id = (string) ( $input['id'] ?? '' );
+                        if ( '' === $input_id ) {
+                            continue;
                         }
+
+                        $handled[] = $input_id;
+                        $value     = $entry[ $input_id ] ?? '';
+                        $label     = $input['label'] ?? GFCommon::get_label( $field, $input_id );
+                        $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
+
+                        $render[] = array(
+                            'key'   => $input_id,
+                            'label' => $label,
+                            'value' => $this->decode_unicode_literals( $display ),
+                        );
                     }
+                } else {
+                    $handled[] = $field_id;
+                    $value     = $entry[ $field_id ] ?? '';
+                    $label     = GFCommon::get_label( $field );
+                    $display   = GFCommon::get_lead_field_display( $field, $value, $currency );
+
+                    $render[] = array(
+                        'key'   => $field_id,
+                        'label' => $label,
+                        'value' => $this->decode_unicode_literals( $display ),
+                    );
                 }
             }
         }
 
-        foreach ( array_keys( (array) $entry ) as $entry_key ) {
-            $field_ids[] = (string) $entry_key;
-        }
+        foreach ( $entry as $entry_key => $raw_value ) {
+            $entry_id = (string) $entry_key;
+            if ( in_array( $entry_id, $handled, true ) ) {
+                continue;
+            }
 
-        $field_ids = array_unique( $field_ids );
-
-        foreach ( $field_ids as $fid ) {
-            $field_id      = (string) $fid;
-            $value         = $this->resolve_field_value( $field_id, $entry, $form, array() );
-            $resolved_label = $label_map[ $field_id ] ?? $this->resolve_field_label( $field_id, $form, $label_map );
-
-            $render_fields[] = array(
-                'key'   => $field_id,
-                'label' => $resolved_label,
-                'value' => $value,
+            $render[] = array(
+                'key'   => $entry_id,
+                'label' => $entry_id,
+                'value' => $this->decode_unicode_literals( $raw_value ),
             );
         }
 
-        return $render_fields;
+        return $render;
     }
 
     private function map_form_fields( $form ) {

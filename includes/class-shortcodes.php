@@ -410,7 +410,7 @@ class Benana_Automation_Shortcodes {
         $field_map     = $this->map_form_fields( $form );
         $label_map     = array();
 
-        $field_ids = array();
+        $field_ids = array_keys( $display_map );
         if ( ! empty( $form['fields'] ) ) {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );

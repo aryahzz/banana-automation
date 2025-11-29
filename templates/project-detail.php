@@ -18,7 +18,7 @@
             } elseif ( 'completed' === $view['action_msg'] ) {
                 echo 'پروژه به اتمام رسید.';
             } elseif ( 'uploaded' === $view['action_msg'] ) {
-                echo 'فایل با موفقیت ثبت و به ورودی پیوست شد.';
+                echo 'فایل با موفقیت ثبت شد.';
             } elseif ( 'upload_failed' === $view['action_msg'] ) {
                 echo 'بارگذاری فایل انجام نشد.';
             }
@@ -54,7 +54,7 @@
     <?php if ( 'accepted' === $view['status'] ) : ?>
         <div class="benana-upload-box">
             <h4>بارگذاری فایل پروژه</h4>
-            <p class="description">فایل پروژه را بارگذاری کنید تا به فیلد آپلود فرم (شناسه: <?php echo esc_html( $view['upload_field'] ?: '—' ); ?>) پیوست شود.</p>
+            <p class="description">لطفا فایل های نقشه را بصورت جمع آوری و در قالب .zip آپلود بفرمایید</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
                 <input type="hidden" name="benana_action" value="upload_file" />

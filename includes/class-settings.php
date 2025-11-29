@@ -32,9 +32,9 @@ class Benana_Automation_Settings {
     }
 
     public function register_menu() {
-        add_menu_page( 'اتوماسیون پروژه‌ها', 'اتوماسیون پروژه‌ها', 'manage_options', 'benana-automation-projects', array( $this, 'settings_page' ), 'dashicons-admin-generic', 26 );
-        add_submenu_page( 'benana-automation-projects', 'ورودی‌ها', 'ورودی‌ها', 'manage_options', 'benana-automation-entries', array( $this, 'entries_page' ) );
-        add_submenu_page( 'benana-automation-projects', 'گزارشات', 'گزارشات', 'manage_options', 'benana-automation-reports', array( $this, 'reports_page' ) );
+        add_menu_page( 'ورودی‌ها', 'اتوماسیون پروژه‌ها', 'manage_options', 'benana-automation-projects', array( $this, 'entries_page' ), 'dashicons-admin-generic', 26 );
+        add_submenu_page( 'benana-automation-projects', 'ورودی‌ها', 'ورودی‌ها', 'manage_options', 'benana-automation-projects', array( $this, 'entries_page' ) );
+        add_submenu_page( 'benana-automation-projects', 'تنظیمات', 'تنظیمات', 'manage_options', 'benana-automation-settings', array( $this, 'settings_page' ) );
         add_submenu_page( 'benana-automation-projects', 'راهنمای برچسب‌ها', 'برچسب‌های راهنما', 'manage_options', 'benana-automation-merge-tags', array( $this, 'merge_tags_page' ) );
     }
 
@@ -51,7 +51,7 @@ class Benana_Automation_Settings {
         check_admin_referer( 'benana_delete_entry', 'benana_delete_entry_nonce' );
 
         $entry_id = absint( $_POST['gf_entry_id'] ?? 0 );
-        $redirect = admin_url( 'admin.php?page=benana-automation-entries' );
+        $redirect = admin_url( 'admin.php?page=benana-automation-projects' );
 
         if ( ! $entry_id || ! class_exists( 'GFAPI' ) ) {
             wp_safe_redirect( add_query_arg( 'benana_entry_delete', rawurlencode( 'شناسه ورودی نامعتبر است.' ), $redirect ) );
@@ -78,7 +78,7 @@ class Benana_Automation_Settings {
 
         $ids      = isset( $_POST['project_ids'] ) ? (array) $_POST['project_ids'] : array();
         $ids      = array_filter( array_map( 'absint', $ids ) );
-        $redirect = admin_url( 'admin.php?page=benana-automation-entries' );
+        $redirect = admin_url( 'admin.php?page=benana-automation-projects' );
 
         if ( empty( $ids ) ) {
             wp_safe_redirect( add_query_arg( 'benana_entry_delete', rawurlencode( 'ورودی‌ای برای حذف انتخاب نشد.' ), $redirect ) );
@@ -179,6 +179,11 @@ class Benana_Automation_Settings {
         $status_filter = sanitize_text_field( wp_unslash( $_GET['project_status'] ?? '' ) );
         $paged         = max( 1, absint( $_GET['paged'] ?? 1 ) );
 
+        $status_map     = $this->get_status_labels();
+        $status_counts  = $this->get_status_counts( $status_map );
+        $recent_entries = $this->get_recent_projects();
+        $top_acceptors  = $this->get_top_acceptors();
+
         $query_args = array(
             'post_type'      => 'project',
             'posts_per_page' => 20,
@@ -199,11 +204,129 @@ class Benana_Automation_Settings {
         $projects   = new WP_Query( $query_args );
         $provinces  = Benana_Automation_Address::get_provinces();
         $cities     = Benana_Automation_Address::get_cities();
-        $status_map = $this->get_status_labels();
 
         ?>
         <div class="wrap benana-admin">
             <h1>ورودی‌ها</h1>
+            <div class="benana-report-grid">
+                <div class="report-card">
+                    <h3>مجموع پروژه‌ها</h3>
+                    <strong><?php echo esc_html( $status_counts['total'] ?? 0 ); ?></strong>
+                </div>
+                <?php foreach ( $status_map as $status_key => $status_label ) : ?>
+                    <div class="report-card">
+                        <h3><?php echo esc_html( $status_label ); ?></h3>
+                        <strong><?php echo esc_html( $status_counts['statuses'][ $status_key ] ?? 0 ); ?></strong>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="benana-charts">
+                <div class="benana-chart-card">
+                    <h3>نمودار وضعیت‌ها</h3>
+                    <?php
+                    $max_status = 0;
+                    if ( ! empty( $status_counts['statuses'] ) ) {
+                        $max_status = max( $status_counts['statuses'] );
+                    }
+                    ?>
+                    <div class="benana-bar-chart">
+                        <?php foreach ( $status_map as $status_key => $status_label ) :
+                            $count    = $status_counts['statuses'][ $status_key ] ?? 0;
+                            $percent  = $max_status ? round( ( $count / $max_status ) * 100 ) : 0;
+                            $bar_class = 'status-' . $status_key;
+                            ?>
+                            <div class="benana-bar-row">
+                                <div class="benana-bar-label"><?php echo esc_html( $status_label ); ?></div>
+                                <div class="benana-bar-track">
+                                    <span class="benana-bar-fill <?php echo esc_attr( $bar_class ); ?>" style="width: <?php echo esc_attr( $percent ); ?>%"></span>
+                                    <span class="benana-bar-count"><?php echo esc_html( $count ); ?></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="benana-chart-card">
+                    <h3>پیشرفت تکمیل</h3>
+                    <?php
+                    $completed_count = $status_counts['statuses']['completed'] ?? 0;
+                    $total_projects  = $status_counts['total'] ?: 0;
+                    $completion_pct  = $total_projects ? round( ( $completed_count / $total_projects ) * 100 ) : 0;
+                    ?>
+                    <div class="benana-progress">
+                        <div class="benana-progress-track">
+                            <span class="benana-progress-fill" style="width: <?php echo esc_attr( $completion_pct ); ?>%"></span>
+                        </div>
+                        <p class="benana-progress-label"><?php echo esc_html( $completion_pct ); ?>٪ از پروژه‌ها تکمیل شده است.</p>
+                    </div>
+
+                    <?php if ( ! empty( $top_acceptors ) ) : ?>
+                        <h4>فعال‌ترین پذیرنده‌ها</h4>
+                        <table class="table-banana widefat fixed benana-top-acceptors">
+                            <thead>
+                                <tr>
+                                    <th>نام کاربر</th>
+                                    <th>تعداد پذیرش</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ( $top_acceptors as $acceptor ) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html( $acceptor['user']->display_name ); ?></td>
+                                        <td><?php echo esc_html( $acceptor['count'] ); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <h2>آخرین ورودی‌ها</h2>
+            <table class="table-banana widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>شناسه</th>
+                        <th>عنوان</th>
+                        <th>وضعیت</th>
+                        <th>استان/شهر</th>
+                        <th>آخرین بروزرسانی</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $provinces = Benana_Automation_Address::get_provinces();
+                    if ( $recent_entries->have_posts() ) :
+                        while ( $recent_entries->have_posts() ) :
+                            $recent_entries->the_post();
+                            $project_id   = get_the_ID();
+                            $province_id  = get_post_meta( $project_id, 'project_province_id', true );
+                            $city_id      = get_post_meta( $project_id, 'project_city_id', true );
+                            $province     = isset( $provinces[ $province_id ] ) ? $provinces[ $province_id ] : '—';
+                            $city         = Benana_Automation_Address::get_city_name( $province_id, $city_id );
+                            $status       = get_post_meta( $project_id, 'project_status', true );
+                            $status_label = $status_map[ $status ] ?? 'نامشخص';
+                            ?>
+                            <tr>
+                                <td>#<?php echo esc_html( $project_id ); ?></td>
+                                <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
+                                <td class="status status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></td>
+                                <td><?php echo esc_html( $province . ' / ' . $city ); ?></td>
+                                <td><?php echo esc_html( get_the_modified_date( 'Y/m/d H:i' ) ); ?></td>
+                            </tr>
+                            <?php
+                        endwhile;
+                        wp_reset_postdata();
+                    else :
+                        ?>
+                        <tr><td colspan="5">موردی یافت نشد.</td></tr>
+                        <?php
+                    endif;
+                    ?>
+                </tbody>
+            </table>
+
             <?php if ( isset( $_GET['benana_entry_delete'] ) ) : ?>
                 <div class="notice notice-info"><p><?php echo esc_html( rawurldecode( wp_unslash( $_GET['benana_entry_delete'] ) ) ); ?></p></div>
             <?php endif; ?>
@@ -215,7 +338,7 @@ class Benana_Automation_Settings {
                 <button type="submit" class="button button-secondary">حذف ورودی</button>
             </form>
             <form method="get" class="benana-filters">
-                <input type="hidden" name="page" value="benana-automation-entries" />
+                <input type="hidden" name="page" value="benana-automation-projects" />
                 <label for="project_status">فیلتر وضعیت:</label>
                 <select name="project_status" id="project_status">
                     <option value="">همه وضعیت‌ها</option>
@@ -232,7 +355,7 @@ class Benana_Automation_Settings {
                 <button type="submit" class="button button-secondary" id="benana-delete-selected" disabled>حذف انتخاب‌شده‌ها</button>
             </form>
 
-            <table class="widefat fixed striped">
+            <table class="table-banana widefat fixed striped">
                 <thead>
                     <tr>
                         <th class="manage-column column-cb check-column"><input type="checkbox" id="benana-select-all" /></th>
@@ -285,7 +408,7 @@ class Benana_Automation_Settings {
                                 <td>#<?php echo esc_html( $project_id ); ?></td>
                                 <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
                                 <td><?php echo $gf_link ? '<a href="' . esc_url( $gf_link ) . '">مشاهده ورودی</a>' : '—'; ?></td>
-                                <td><span class="status-tag status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
+                                <td class="status status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></td>
                                 <td><?php echo esc_html( $province_label . ' / ' . $city_label ); ?></td>
                                 <td><?php echo esc_html( is_array( $assigned_users ) ? count( $assigned_users ) : 0 ); ?></td>
                                 <td><?php echo $accepted_user ? esc_html( $accepted_user->display_name ) : '—'; ?></td>
@@ -312,7 +435,7 @@ class Benana_Automation_Settings {
                     'current' => $paged,
                     'type'    => 'array',
                     'add_args' => array(
-                        'page'           => 'benana-automation-entries',
+                        'page'           => 'benana-automation-projects',
                         'project_status' => $status_filter,
                     ),
                 )
@@ -419,6 +542,91 @@ class Benana_Automation_Settings {
             </table>
         </div>
         <?php
+    }
+
+    private function get_status_counts( $status_map ) {
+        $counts = array();
+        foreach ( $status_map as $status_key => $status_label ) {
+            $query = new WP_Query(
+                array(
+                    'post_type'      => 'project',
+                    'posts_per_page' => -1,
+                    'fields'         => 'ids',
+                    'no_found_rows'  => true,
+                    'meta_query'     => array(
+                        array(
+                            'key'   => 'project_status',
+                            'value' => $status_key,
+                        ),
+                    ),
+                )
+            );
+
+            $counts[ $status_key ] = $query->found_posts;
+        }
+
+        $total_query = new WP_Query( array( 'post_type' => 'project', 'posts_per_page' => -1, 'fields' => 'ids', 'no_found_rows' => true ) );
+
+        return array(
+            'total'    => $total_query->found_posts,
+            'statuses' => $counts,
+        );
+    }
+
+    private function get_recent_projects( $limit = 10 ) {
+        return new WP_Query(
+            array(
+                'post_type'      => 'project',
+                'posts_per_page' => $limit,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            )
+        );
+    }
+
+    private function get_top_acceptors( $limit = 3 ) {
+        $projects = get_posts(
+            array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+            )
+        );
+
+        $accept_counts = array();
+        foreach ( $projects as $project_id ) {
+            $accepted_by = get_post_meta( $project_id, 'accepted_by', true );
+            if ( empty( $accepted_by ) ) {
+                continue;
+            }
+
+            if ( ! isset( $accept_counts[ $accepted_by ] ) ) {
+                $accept_counts[ $accepted_by ] = 0;
+            }
+            $accept_counts[ $accepted_by ]++;
+        }
+
+        arsort( $accept_counts );
+
+        $top = array();
+        foreach ( $accept_counts as $user_id => $count ) {
+            $user = get_user_by( 'id', $user_id );
+            if ( ! $user ) {
+                continue;
+            }
+
+            $top[] = array(
+                'user'  => $user,
+                'count' => $count,
+            );
+
+            if ( count( $top ) >= $limit ) {
+                break;
+            }
+        }
+
+        return $top;
     }
 
     private function get_status_labels() {

@@ -22,7 +22,7 @@
             $entry_date  = $entry_dates[ $project->ID ] ?? '';
             ?>
             <div class="benana-card">
-                <a class="benana-eye" href="<?php echo esc_url( $detail_url ); ?>" aria-label="مشاهده پروژه">
+                <a class="benana-eye" href="<?php echo esc_url( $detail_url ); ?>" aria-label="مشاهده پروژه" target="_blank" rel="noopener">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5 0-9 5-9 7s4 7 9 7 9-5 9-7-4-7-9-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8.2c-1.7 0-3.2 1.5-3.2 3.2S10.3 15.2 12 15.2s3.2-1.5 3.2-3.2S13.7 8.8 12 8.8z"/></svg>
                 </a>
                 <strong><?php echo esc_html( get_the_title( $project ) ); ?></strong>

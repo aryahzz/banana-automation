@@ -964,27 +964,13 @@ class Benana_Automation_Shortcodes {
     }
 
     public function stats_shortcode( $atts ) {
-        $atts    = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
-        $user_id = get_current_user_id();
-        $count   = 0;
+        $atts  = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
+        $count = 0;
         if ( $atts['type'] === 'pending_count' ) {
             $args = array(
                 'post_type'      => 'project',
                 'posts_per_page' => -1,
                 'meta_query'     => array(
-                    'relation' => 'AND',
-                    array(
-                        'relation' => 'OR',
-                        array(
-                            'key'     => 'assigned_users',
-                            'value'   => $user_id,
-                            'compare' => 'LIKE',
-                        ),
-                        array(
-                            'key'   => 'accepted_by',
-                            'value' => $user_id,
-                        ),
-                    ),
                     array(
                         'key'   => 'project_status',
                         'value' => 'new',
@@ -1001,10 +987,6 @@ class Benana_Automation_Shortcodes {
                 'post_type'      => 'project',
                 'posts_per_page' => -1,
                 'meta_query'     => array(
-                    array(
-                        'key'   => 'accepted_by',
-                        'value' => $user_id,
-                    ),
                     array(
                         'key'   => 'project_status',
                         'value' => 'completed',

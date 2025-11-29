@@ -3,7 +3,7 @@
 Plugin Name: بنانا اتوماسیون پروژه‌ها
 Plugin URI: https://github.com/aryahzz/banana-automation
 Description: سیستم اتوماسیون مدیریت پروژه با Gravity Forms و WP-SMS.
-Version: 1.3.46
+Version: 1.3.47
 Requires at least: 6.0
 Requires PHP: 7.4
 Author: Banana Automation
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'BENANA_AUTOMATION_PATH', plugin_dir_path( __FILE__ ) );
 define( 'BENANA_AUTOMATION_URL', plugin_dir_url( __FILE__ ) );
-define( 'BENANA_AUTOMATION_VERSION', '1.3.46' );
+define( 'BENANA_AUTOMATION_VERSION', '1.3.47' );
 
 require_once BENANA_AUTOMATION_PATH . 'includes/class-address.php';
 require_once BENANA_AUTOMATION_PATH . 'includes/class-cpt.php';
@@ -155,7 +155,6 @@ class Benana_Automation_Projects {
             'toplevel_page_benana-automation-projects',
             'benana-automation-projects_page_benana-automation-projects',
             'benana-automation-projects_page_benana-automation-settings',
-            'benana-automation-projects_page_benana-automation-merge-tags',
         );
 
         $is_profile_screen = in_array( $hook, array( 'profile.php', 'user-edit.php' ), true );
@@ -167,7 +166,8 @@ class Benana_Automation_Projects {
 
         wp_enqueue_style( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/css/admin.css', array(), '1.0.0' );
         wp_enqueue_style( 'benana-automation-rtl', BENANA_AUTOMATION_URL . 'assets/css/rtl.css', array( 'benana-automation-admin' ), '1.0.0' );
-        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery' ), '1.0.0', true );
+        wp_enqueue_script( 'chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js', array(), '4.4.4', true );
+        wp_enqueue_script( 'benana-automation-admin', BENANA_AUTOMATION_URL . 'assets/js/admin.js', array( 'jquery', 'chartjs' ), '1.0.0', true );
 
         if ( $is_profile_screen ) {
             wp_localize_script(

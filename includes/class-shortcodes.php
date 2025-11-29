@@ -406,8 +406,8 @@ class Benana_Automation_Shortcodes {
     }
 
     private function prepare_fields_for_display( $form, $entry ) {
+        $entry         = (array) $entry;
         $render_fields = array();
-        $field_map     = $this->map_form_fields( $form );
         $label_map     = array();
 
         $field_ids = array_keys( $display_map );
@@ -430,7 +430,7 @@ class Benana_Automation_Shortcodes {
             }
         }
 
-        foreach ( array_keys( (array) $entry ) as $entry_key ) {
+        foreach ( array_keys( $entry ) as $entry_key ) {
             $field_ids[] = (string) $entry_key;
         }
 

@@ -385,6 +385,11 @@ class Benana_Automation_Shortcodes {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
+                    $name = $this->resolve_field_name_property( $field );
+                    if ( '' !== trim( (string) $name ) ) {
+                        return $name;
+                    }
+
                     return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
                 }
 
@@ -392,6 +397,10 @@ class Benana_Automation_Shortcodes {
                     foreach ( $field->get_entry_inputs() as $input ) {
                         $iid = (string) ( $input['id'] ?? '' );
                         if ( (string) $iid === (string) $field_id ) {
+                            if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
+                                return $input['name'];
+                            }
+
                             return $input['label'] ?? $field_id;
                         }
                     }
@@ -404,6 +413,37 @@ class Benana_Automation_Shortcodes {
         }
 
         return $field_id;
+    }
+
+    private function resolve_field_name_property( $field ) {
+        if ( is_object( $field ) ) {
+            if ( isset( $field->inputName ) && '' !== trim( (string) $field->inputName ) ) {
+                return $field->inputName;
+            }
+
+            if ( isset( $field->name ) && '' !== trim( (string) $field->name ) ) {
+                return $field->name;
+            }
+
+            if ( is_callable( array( $field, 'get_field_input_name' ) ) ) {
+                $name = $field->get_field_input_name();
+                if ( '' !== trim( (string) $name ) ) {
+                    return $name;
+                }
+            }
+        }
+
+        if ( is_array( $field ) ) {
+            if ( isset( $field['inputName'] ) && '' !== trim( (string) $field['inputName'] ) ) {
+                return $field['inputName'];
+            }
+
+            if ( isset( $field['name'] ) && '' !== trim( (string) $field['name'] ) ) {
+                return $field['name'];
+            }
+        }
+
+        return '';
     }
 
     private function prepare_fields_for_display( $form, $entry, $snapshot = array() ) {
@@ -470,7 +510,12 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                $label = GFCommon::get_label( $field );
+                $label = $this->resolve_field_name_property( $field );
+
+                if ( '' === trim( (string) $label ) ) {
+                    $label = GFCommon::get_label( $field );
+                }
+
                 if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
                     $label = $snapshot_labels[ $field_id ];
                 }

@@ -1,5 +1,60 @@
 <?php
 class Benana_Automation_Shortcodes {
+    private $field_label_overrides = array(
+        '6'    => 'متراژ حدودی زمین',
+        '7'    => 'مورد استفاده برای؟',
+        '9'    => 'زمین مرز دارد؟',
+        '10'   => 'انتخاب مهندس',
+        '16'   => 'شخص مهندسی مد نظر دارید؟',
+        '17'   => 'تلفن',
+        '20'   => 'خدمت مورد نیاز (تفکیک اراضی)',
+        '21'   => 'خدمت مورد نیاز (پروژه عمرانی)',
+        '22'   => 'خدمت مورد نیاز (راهسازی)',
+        '23'   => 'خدمت مورد نیاز (UTM)',
+        '24'   => 'خدمت مورد نیاز (نقشه ثبتی)',
+        '27'   => 'خدمت مورد نیاز (نقشه هوایی)',
+        '28'   => 'آدرس محل پروژه',
+        '28.1' => 'آدرس',
+        '28.3' => 'شهر',
+        '28.4' => 'استان',
+        '28.6' => 'کشور',
+        '37'   => 'مساحت سطح اشغال',
+        '42'   => 'تعداد طبقات',
+        '43'   => 'طول مسیر',
+        '45'   => 'مساحت سطح اشغال',
+        '48'   => 'نوع فونداسیون',
+        '50'   => 'تعداد ستون',
+        '51'   => 'زمان شاغولی',
+        '53'   => 'قوس',
+        '54'   => 'وید',
+        '56'   => 'تعداد سقف',
+        '57'   => 'تعداد راه پله',
+        '58'   => 'مساحت سقف',
+        '59'   => 'نوع ستون',
+        '62'   => 'تعداد ستون',
+        '64'   => 'طول مسیر',
+        '66'   => 'نوع پروژه',
+        '67'   => 'متراژ',
+        '69'   => 'مساحت زمین',
+        '70'   => 'تعداد قطعات',
+        '72'   => 'پرداخت',
+        '81'   => 'پیش پرداخت  تفکیک اراضی',
+        '82'   => 'پیش پرداخت  حجم عملیات خاکی',
+        '84'   => 'پیش پرداخت  تهیه پروفیل طولی و عرضی',
+        '85'   => 'پیش پرداخت  طراحی مسیر',
+        '86'   => 'پیش پرداخت  آکس ستون',
+        '87'   => 'پیش پرداخت  پیاده سازی فونداسیون',
+        '88'   => 'پیش پرداخت  هزینه شاقولی ستون',
+        '90'   => 'تعداد قوس',
+        '91'   => 'هزینه پیاده سازی دامنه',
+        '92'   => 'دسته',
+        '94'   => 'نام و نام خانوادگی',
+        '96'   => 'پیش پرداخت',
+        '98'   => 'مجموع',
+        '101'  => 'لوکیشن',
+        '115'  => 'تاریخ',
+        '117'  => 'نقشه برداری',
+    );
     public function __construct() {
         add_shortcode( 'project_inbox', array( $this, 'inbox_shortcode' ) );
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
@@ -262,7 +317,7 @@ class Benana_Automation_Shortcodes {
         }
 
         $accepted      = intval( get_post_meta( $project_id, 'accepted_by', true ) ) === $user_id;
-        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot );
+        $render_fields = $this->prepare_fields_for_display( $form, $entry, $snapshot, $accepted, $this->field_label_overrides );
         $entry_date    = $this->format_entry_datetime( empty( $entry ) ? $snapshot['entry'] : $entry, $project_id );
 
         $view = array(
@@ -385,12 +440,12 @@ class Benana_Automation_Shortcodes {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
-                    return $this->get_field_display_label( $field, $field_id, $form );
+                    return $this->get_field_display_label( $field, $field_id, $form, $label_map );
                 }
 
                 $inputs = array();
                 if ( is_object( $field ) ) {
-                    if ( is_array( $field->get_entry_inputs() ) ) {
+                    if ( is_callable( array( $field, 'get_entry_inputs' ) ) && is_array( $field->get_entry_inputs() ) ) {
                         $inputs = $field->get_entry_inputs();
                     } elseif ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
                         $inputs = $field->inputs;
@@ -450,7 +505,11 @@ class Benana_Automation_Shortcodes {
         return '';
     }
 
-    private function get_field_display_label( $field, $field_id, $form = array() ) {
+    private function get_field_display_label( $field, $field_id, $form = array(), $label_map = array() ) {
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
+        }
+
         $input = ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) ? GFFormsModel::get_input( $form, $field_id ) : false;
         if ( is_array( $input ) ) {
             if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
@@ -481,21 +540,67 @@ class Benana_Automation_Shortcodes {
             }
         }
 
+        if ( isset( $label_map[ $field_id ] ) ) {
+            return $label_map[ $field_id ];
+        }
+
         return is_object( $field ) ? ( $field->label ?? $field_id ) : ( $field['label'] ?? $field_id );
     }
 
-    private function prepare_fields_for_display( $form, $entry, $snapshot = array() ) {
+    private function get_field_display_html( $field, $value, $entry, $form ) {
+        if ( ! class_exists( 'GFCommon' ) || ! is_object( $field ) ) {
+            return $value;
+        }
+
+        $currency = is_array( $entry ) ? ( $entry['currency'] ?? '' ) : '';
+
+        $display = GFCommon::get_lead_field_display( $field, $value, $currency, true, 'html' );
+        $display = apply_filters( 'gform_entry_field_value', $display, $field, $entry, $form );
+
+        return $display;
+    }
+
+    private function should_hide_before_acceptance( $field_id, $field, $protected_fields ) {
+        if ( in_array( (string) $field_id, $protected_fields, true ) ) {
+            return true;
+        }
+
+        $inputs = array();
+
+        if ( is_object( $field ) ) {
+            if ( is_callable( array( $field, 'get_entry_inputs' ) ) && is_array( $field->get_entry_inputs() ) ) {
+                $inputs = $field->get_entry_inputs();
+            } elseif ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                $inputs = $field->inputs;
+            }
+        } elseif ( is_array( $field ) && isset( $field['inputs'] ) ) {
+            $inputs = $field['inputs'];
+        }
+
+        foreach ( $inputs as $input ) {
+            if ( in_array( (string) ( $input['id'] ?? '' ), $protected_fields, true ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function prepare_fields_for_display( $form, $entry, $snapshot = array(), $is_accepted = false, $label_overrides = array() ) {
         $entry            = is_array( $entry ) ? $entry : (array) $entry;
         $form             = is_array( $form ) ? $form : array();
         $snapshot         = is_array( $snapshot ) ? $snapshot : array();
         $snapshot_entry   = isset( $snapshot['entry'] ) && is_array( $snapshot['entry'] ) ? $snapshot['entry'] : array();
         $snapshot_display = isset( $snapshot['display'] ) && is_array( $snapshot['display'] ) ? $snapshot['display'] : array();
         $snapshot_labels  = isset( $snapshot['labels'] ) && is_array( $snapshot['labels'] ) ? $snapshot['labels'] : array();
+        $label_map        = array_merge( $snapshot_labels, $label_overrides );
         $fields           = array();
         $render           = array();
         $handled          = array();
         $lead_for_filter  = ! empty( $entry ) ? $entry : $snapshot_entry;
         $display_empty    = apply_filters( 'gform_entry_detail_grid_display_empty_fields', false, $form, $lead_for_filter );
+
+        $protected_fields = array( '94', '17', '28.1', '101' );
 
         if ( empty( $entry ) && ! empty( $snapshot_entry ) ) {
             $entry = $snapshot_entry;
@@ -525,14 +630,17 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_id, $field, $protected_fields ) ) {
+                    continue;
+                }
+
                 if ( is_array( $field->fields ) ) {
                     $field->nestingLevel = 0;
                 }
 
                 $value = class_exists( 'RGFormsModel' ) ? RGFormsModel::get_lead_field_value( $entry, $field ) : rgar( $entry, $field_id );
 
-                $display = GFCommon::get_lead_field_display( $field, $value, $currency );
-                $display = apply_filters( 'gform_entry_field_value', $display, $field, $entry, $form );
+                $display = $this->get_field_display_html( $field, $value, $entry, $form );
 
                 if ( $this->is_empty_value( $display ) ) {
                     if ( isset( $snapshot_display[ $field_id ] ) ) {
@@ -542,16 +650,18 @@ class Benana_Automation_Shortcodes {
                     } elseif ( isset( $entry[ $field_id ] ) ) {
                         $display = $entry[ $field_id ];
                     }
+
+                    $display = $this->get_field_display_html( $field, $display, $entry, $form );
                 }
 
                 if ( $this->is_empty_value( $display ) && ! $display_empty ) {
                     continue;
                 }
 
-                $label = $this->get_field_display_label( $field, $field_id, $form );
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
 
-                if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
-                    $label = $snapshot_labels[ $field_id ];
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
                 }
 
                 if ( $this->is_empty_value( $display ) ) {
@@ -578,6 +688,10 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
                 if ( $this->is_empty_value( $display_value ) ) {
                     if ( isset( $snapshot_display[ $field_key ] ) ) {
                         $display_value = $snapshot_display[ $field_key ];
@@ -590,9 +704,16 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                $label = $snapshot_labels[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $snapshot_labels );
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
                 if ( '' === trim( (string) $label ) ) {
                     continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
                 }
 
                 if ( $this->is_empty_value( $display_value ) ) {
@@ -618,13 +739,24 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
                 if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
                     continue;
                 }
 
-                $label = $snapshot_labels[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $snapshot_labels );
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
                 if ( '' === trim( (string) $label ) ) {
                     continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
                 }
 
                 if ( $this->is_empty_value( $display_value ) ) {

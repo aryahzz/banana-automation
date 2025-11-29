@@ -437,7 +437,6 @@ class Benana_Automation_Shortcodes {
 
         if ( class_exists( 'GFCommon' ) ) {
             foreach ( $fields as $field ) {
-                $inputs   = is_callable( array( $field, 'get_entry_inputs' ) ) ? $field->get_entry_inputs() : null;
                 $field_id = (string) $field->id;
                 $currency = $entry['currency'] ?? '';
 
@@ -446,64 +445,38 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                if ( is_array( $inputs ) && ! empty( $inputs ) ) {
-                    foreach ( $inputs as $input ) {
-                        $input_id = (string) ( $input['id'] ?? '' );
-                        if ( '' === $input_id ) {
-                            continue;
-                        }
-
-                        $handled[] = $input_id;
-                        $value     = $entry[ $input_id ] ?? '';
-                        $label     = $input['label'] ?? GFCommon::get_label( $field, $input_id );
-                        if ( isset( $snapshot_labels[ $input_id ] ) && ( '' === trim( (string) $label ) || (string) $input_id === trim( (string) $label ) ) ) {
-                            $label = $snapshot_labels[ $input_id ];
-                        }
-                        $display = GFCommon::get_lead_field_display( $field, $value, $currency );
-                        if ( '' === trim( wp_strip_all_tags( (string) $display ) ) ) {
-                            if ( isset( $snapshot_display[ $input_id ] ) ) {
-                                $display = $snapshot_display[ $input_id ];
-                            } elseif ( isset( $snapshot_entry[ $input_id ] ) ) {
-                                $display = $snapshot_entry[ $input_id ];
-                            }
-                        }
-
-                        if ( $this->is_empty_value( $display ) ) {
-                            continue;
-                        }
-
-                        $render[] = array(
-                            'key'   => $input_id,
-                            'label' => $label,
-                            'value' => $this->decode_unicode_literals( $display ),
-                        );
-                    }
-                } else {
-                    $handled[] = $field_id;
-                    $value     = $entry[ $field_id ] ?? '';
-                    $label     = GFCommon::get_label( $field );
-                    if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
-                        $label = $snapshot_labels[ $field_id ];
-                    }
-                    $display = GFCommon::get_lead_field_display( $field, $value, $currency );
-                    if ( '' === trim( wp_strip_all_tags( (string) $display ) ) ) {
-                        if ( isset( $snapshot_display[ $field_id ] ) ) {
-                            $display = $snapshot_display[ $field_id ];
-                        } elseif ( isset( $snapshot_entry[ $field_id ] ) ) {
-                            $display = $snapshot_entry[ $field_id ];
-                        }
-                    }
-
-                    if ( $this->is_empty_value( $display ) ) {
-                        continue;
-                    }
-
-                    $render[] = array(
-                        'key'   => $field_id,
-                        'label' => $label,
-                        'value' => $this->decode_unicode_literals( $display ),
-                    );
+                if ( is_array( $field->fields ) ) {
+                    $field->nestingLevel = 0;
                 }
+
+                $value = class_exists( 'RGFormsModel' ) ? RGFormsModel::get_lead_field_value( $entry, $field ) : rgar( $entry, $field_id );
+
+                $display = GFCommon::get_lead_field_display( $field, $value, $currency );
+                $display = apply_filters( 'gform_entry_field_value', $display, $field, $entry, $form );
+
+                if ( '' === trim( wp_strip_all_tags( (string) $display ) ) ) {
+                    if ( isset( $snapshot_display[ $field_id ] ) ) {
+                        $display = $snapshot_display[ $field_id ];
+                    } elseif ( isset( $snapshot_entry[ $field_id ] ) ) {
+                        $display = $snapshot_entry[ $field_id ];
+                    }
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    continue;
+                }
+
+                $label = GFCommon::get_label( $field );
+                if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $snapshot_labels[ $field_id ];
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->decode_unicode_literals( $display ),
+                );
+                $handled[] = $field_id;
             }
         }
 

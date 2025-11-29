@@ -200,8 +200,7 @@ class Benana_Automation_Project_Handler {
                 return $entry;
             }
         }
-        $snapshot = self::get_entry_snapshot( $project_id );
-        return $snapshot['entry'];
+        return array();
     }
 
     public static function get_entry_snapshot( $project_id ) {

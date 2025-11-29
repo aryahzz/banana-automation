@@ -451,7 +451,7 @@ class Benana_Automation_Shortcodes {
                         $handled[] = $input_id;
                         $value     = $entry[ $input_id ] ?? '';
                         $label     = $input['label'] ?? GFCommon::get_label( $field, $input_id );
-                        if ( '' === trim( (string) $label ) && isset( $snapshot_labels[ $input_id ] ) ) {
+                        if ( isset( $snapshot_labels[ $input_id ] ) && ( '' === trim( (string) $label ) || $input_id === trim( (string) $label ) ) ) {
                             $label = $snapshot_labels[ $input_id ];
                         }
                         $display = GFCommon::get_lead_field_display( $field, $value, $currency );
@@ -469,7 +469,7 @@ class Benana_Automation_Shortcodes {
                     $handled[] = $field_id;
                     $value     = $entry[ $field_id ] ?? '';
                     $label     = GFCommon::get_label( $field );
-                    if ( '' === trim( (string) $label ) && isset( $snapshot_labels[ $field_id ] ) ) {
+                    if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || $field_id === trim( (string) $label ) ) ) {
                         $label = $snapshot_labels[ $field_id ];
                     }
                     $display = GFCommon::get_lead_field_display( $field, $value, $currency );

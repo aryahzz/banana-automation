@@ -59,6 +59,7 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'project_inbox', array( $this, 'inbox_shortcode' ) );
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
         add_shortcode( 'project_user_stats', array( $this, 'stats_shortcode' ) );
+        add_shortcode( 'benana_stats', array( $this, 'stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
         add_action( 'template_redirect', array( $this, 'handle_actions' ) );
@@ -593,7 +594,7 @@ class Benana_Automation_Shortcodes {
         $snapshot_entry   = isset( $snapshot['entry'] ) && is_array( $snapshot['entry'] ) ? $snapshot['entry'] : array();
         $snapshot_display = isset( $snapshot['display'] ) && is_array( $snapshot['display'] ) ? $snapshot['display'] : array();
         $snapshot_labels  = isset( $snapshot['labels'] ) && is_array( $snapshot['labels'] ) ? $snapshot['labels'] : array();
-        $label_map        = array_merge( $snapshot_labels, $label_overrides );
+        $label_map        = array_merge( $label_overrides, $snapshot_labels );
         $fields           = array();
         $render           = array();
         $handled          = array();
@@ -671,6 +672,35 @@ class Benana_Automation_Shortcodes {
                 $render[]  = array(
                     'key'   => $field_id,
                     'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display ) ),
+                );
+                $handled[] = $field_id;
+
+                if ( is_object( $field ) && isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                    foreach ( $field->inputs as $input ) {
+                        if ( isset( $input['id'] ) ) {
+                            $handled[] = (string) $input['id'];
+                        }
+                    }
+                }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
                     'value' => $this->decode_unicode_literals( $display ),
                 );
                 $handled[] = $field_id;
@@ -723,7 +753,7 @@ class Benana_Automation_Shortcodes {
                 $render[] = array(
                     'key'   => $field_key,
                     'label' => $label,
-                    'value' => $this->decode_unicode_literals( $display_value ),
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
                 );
             }
         }
@@ -766,12 +796,34 @@ class Benana_Automation_Shortcodes {
                 $render[] = array(
                     'key'   => $field_key,
                     'label' => $label,
-                    'value' => $this->decode_unicode_literals( $display_value ),
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
                 );
             }
         }
 
         return $render;
+    }
+
+    private function ensure_html_value( $value ) {
+        if ( is_array( $value ) ) {
+            return array_map( array( $this, 'ensure_html_value' ), $value );
+        }
+
+        if ( ! is_string( $value ) ) {
+            return $value;
+        }
+
+        if ( false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) ) {
+            return $value;
+        }
+
+        $trimmed = trim( $value );
+
+        if ( filter_var( $trimmed, FILTER_VALIDATE_URL ) ) {
+            return '<a href="' . esc_url( $trimmed ) . '" target="_blank" rel="noreferrer noopener">' . esc_html( $trimmed ) . '</a>';
+        }
+
+        return $value;
     }
 
     private function map_form_fields( $form ) {

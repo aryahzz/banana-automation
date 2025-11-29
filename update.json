@@ -1,7 +1,7 @@
 {
-  "version": "1.3.40",
+  "version": "1.3.41",
     "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
     "requires": "6.0",
     "tested": "6.5",
-    "changelog": "- نمایش نام فیلدهای Gravity Forms (Name) به‌جای آیدی و ورودی‌های بدون نام\n- حفظ منطق نمایش فیلدهای خالی مطابق مستندات رسمی\n- به‌روزرسانی نسخه افزونه"
+    "changelog": "- استفاده از نام/برچسب فیلدهای Gravity Forms به‌جای شناسه فیلدها مطابق مستندات Field Object\n- حفظ منطق نمایش فیلدهای خالی و استفاده از داده اسنپ‌شات در صورت نیاز\n- به‌روزرسانی نسخه افزونه"
   }

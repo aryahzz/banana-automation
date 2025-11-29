@@ -385,12 +385,7 @@ class Benana_Automation_Shortcodes {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
-                    $name = $this->resolve_field_name_property( $field );
-                    if ( '' !== trim( (string) $name ) ) {
-                        return $name;
-                    }
-
-                    return is_object( $field ) ? $field->label : ( $field['label'] ?? $field_id );
+                    return $this->get_field_display_label( $field, $field_id );
                 }
 
                 $inputs = array();
@@ -453,6 +448,29 @@ class Benana_Automation_Shortcodes {
         }
 
         return '';
+    }
+
+    private function get_field_display_label( $field, $field_id ) {
+        if ( class_exists( 'GFFormsModel' ) && is_object( $field ) ) {
+            $label = GFFormsModel::get_label( $field, $field_id, false, true );
+            if ( '' !== trim( (string) $label ) && (string) $label !== (string) $field_id ) {
+                return $label;
+            }
+        }
+
+        $name = $this->resolve_field_name_property( $field );
+        if ( '' !== trim( (string) $name ) ) {
+            return $name;
+        }
+
+        if ( class_exists( 'GFCommon' ) && is_object( $field ) ) {
+            $label = GFCommon::get_label( $field, $field_id, false, true );
+            if ( '' !== trim( (string) $label ) ) {
+                return $label;
+            }
+        }
+
+        return is_object( $field ) ? ( $field->label ?? $field_id ) : ( $field['label'] ?? $field_id );
     }
 
     private function prepare_fields_for_display( $form, $entry, $snapshot = array() ) {
@@ -519,11 +537,7 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                $label = $this->resolve_field_name_property( $field );
-
-                if ( '' === trim( (string) $label ) ) {
-                    $label = GFCommon::get_label( $field );
-                }
+                $label = $this->get_field_display_label( $field, $field_id );
 
                 if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
                     $label = $snapshot_labels[ $field_id ];

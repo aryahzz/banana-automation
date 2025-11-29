@@ -1,5 +1,60 @@
 <?php
 class Benana_Automation_Shortcodes {
+    private $field_label_overrides = array(
+        '6'    => 'متراژ حدودی زمین',
+        '7'    => 'مورد استفاده برای؟',
+        '9'    => 'زمین مرز دارد؟',
+        '10'   => 'انتخاب مهندس',
+        '16'   => 'شخص مهندسی مد نظر دارید؟',
+        '17'   => 'تلفن',
+        '20'   => 'خدمت مورد نیاز (تفکیک اراضی)',
+        '21'   => 'خدمت مورد نیاز (پروژه عمرانی)',
+        '22'   => 'خدمت مورد نیاز (راهسازی)',
+        '23'   => 'خدمت مورد نیاز (UTM)',
+        '24'   => 'خدمت مورد نیاز (نقشه ثبتی)',
+        '27'   => 'خدمت مورد نیاز (نقشه هوایی)',
+        '28'   => 'آدرس محل پروژه',
+        '28.1' => 'آدرس',
+        '28.3' => 'شهر',
+        '28.4' => 'استان',
+        '28.6' => 'کشور',
+        '37'   => 'مساحت سطح اشغال',
+        '42'   => 'تعداد طبقات',
+        '43'   => 'طول مسیر',
+        '45'   => 'مساحت سطح اشغال',
+        '48'   => 'نوع فونداسیون',
+        '50'   => 'تعداد ستون',
+        '51'   => 'زمان شاغولی',
+        '53'   => 'قوس',
+        '54'   => 'وید',
+        '56'   => 'تعداد سقف',
+        '57'   => 'تعداد راه پله',
+        '58'   => 'مساحت سقف',
+        '59'   => 'نوع ستون',
+        '62'   => 'تعداد ستون',
+        '64'   => 'طول مسیر',
+        '66'   => 'نوع پروژه',
+        '67'   => 'متراژ',
+        '69'   => 'مساحت زمین',
+        '70'   => 'تعداد قطعات',
+        '72'   => 'پرداخت',
+        '81'   => 'پیش پرداخت  تفکیک اراضی',
+        '82'   => 'پیش پرداخت  حجم عملیات خاکی',
+        '84'   => 'پیش پرداخت  تهیه پروفیل طولی و عرضی',
+        '85'   => 'پیش پرداخت  طراحی مسیر',
+        '86'   => 'پیش پرداخت  آکس ستون',
+        '87'   => 'پیش پرداخت  پیاده سازی فونداسیون',
+        '88'   => 'پیش پرداخت  هزینه شاقولی ستون',
+        '90'   => 'تعداد قوس',
+        '91'   => 'هزینه پیاده سازی دامنه',
+        '92'   => 'دسته',
+        '94'   => 'نام و نام خانوادگی',
+        '96'   => 'پیش پرداخت',
+        '98'   => 'مجموع',
+        '101'  => 'لوکیشن',
+        '115'  => 'تاریخ',
+        '117'  => 'نقشه برداری',
+    );
     public function __construct() {
         add_shortcode( 'project_inbox', array( $this, 'inbox_shortcode' ) );
         add_shortcode( 'project_user_history', array( $this, 'history_shortcode' ) );
@@ -630,6 +685,56 @@ class Benana_Automation_Shortcodes {
                         }
                     }
                 }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display ) ),
+                );
+                $handled[] = $field_id;
+
+                if ( is_object( $field ) && isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                    foreach ( $field->inputs as $input ) {
+                        if ( isset( $input['id'] ) ) {
+                            $handled[] = (string) $input['id'];
+                        }
+                    }
+                }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->decode_unicode_literals( $display ),
+                );
+                $handled[] = $field_id;
             }
         }
 

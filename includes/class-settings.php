@@ -403,6 +403,7 @@ class Benana_Automation_Settings {
                 ),
             )
         );
+    }
 
         $buckets = array();
         for ( $i = $days - 1; $i >= 0; $i-- ) {

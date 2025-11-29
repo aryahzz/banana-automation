@@ -385,7 +385,7 @@ class Benana_Automation_Shortcodes {
             foreach ( $form['fields'] as $field ) {
                 $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
                 if ( (string) $fid === (string) $field_id ) {
-                    return $this->get_field_display_label( $field, $field_id );
+                    return $this->get_field_display_label( $field, $field_id, $form );
                 }
 
                 $inputs = array();
@@ -450,7 +450,18 @@ class Benana_Automation_Shortcodes {
         return '';
     }
 
-    private function get_field_display_label( $field, $field_id ) {
+    private function get_field_display_label( $field, $field_id, $form = array() ) {
+        $input = ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) ? GFFormsModel::get_input( $form, $field_id ) : false;
+        if ( is_array( $input ) ) {
+            if ( '' !== trim( (string) ( $input['name'] ?? '' ) ) ) {
+                return $input['name'];
+            }
+
+            if ( '' !== trim( (string) ( $input['label'] ?? '' ) ) ) {
+                return $input['label'];
+            }
+        }
+
         if ( class_exists( 'GFFormsModel' ) && is_object( $field ) ) {
             $label = GFFormsModel::get_label( $field, $field_id, false, true );
             if ( '' !== trim( (string) $label ) && (string) $label !== (string) $field_id ) {
@@ -537,7 +548,7 @@ class Benana_Automation_Shortcodes {
                     continue;
                 }
 
-                $label = $this->get_field_display_label( $field, $field_id );
+                $label = $this->get_field_display_label( $field, $field_id, $form );
 
                 if ( isset( $snapshot_labels[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
                     $label = $snapshot_labels[ $field_id ];

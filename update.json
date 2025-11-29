@@ -1,7 +1,7 @@
 {
-  "version": "1.3.41",
+  "version": "1.3.42",
     "download_url": "https://github.com/aryahzz/banana-automation/archive/refs/heads/main.zip",
     "requires": "6.0",
     "tested": "6.5",
-    "changelog": "- استفاده از نام/برچسب فیلدهای Gravity Forms به‌جای شناسه فیلدها مطابق مستندات Field Object\n- حفظ منطق نمایش فیلدهای خالی و استفاده از داده اسنپ‌شات در صورت نیاز\n- به‌روزرسانی نسخه افزونه"
+    "changelog": "- استفاده از نام فیلد (input name) و برچسب ورودی‌های Gravity Forms به‌جای شناسه فیلد در جزئیات پروژه\n- حفظ منطق نمایش فیلدهای خالی و استفاده از داده اسنپ‌شات در صورت نیاز\n- به‌روزرسانی نسخه افزونه"
   }

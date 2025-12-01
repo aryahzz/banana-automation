@@ -284,7 +284,7 @@ class Benana_Automation_Settings {
             </div>
 
             <h2>آخرین ورودی‌ها</h2>
-            <table class="table-banana widefat fixed striped">
+            <table class="table-banana widefat fixed striped last-entries">
                 <thead>
                     <tr>
                         <th>شناسه</th>
@@ -355,7 +355,7 @@ class Benana_Automation_Settings {
                 <button type="submit" class="button button-secondary" id="benana-delete-selected" disabled>حذف انتخاب‌شده‌ها</button>
             </form>
 
-            <table class="table-banana widefat fixed striped">
+            <table class="table-banana widefat fixed striped entries">
                 <thead>
                     <tr>
                         <th class="manage-column column-cb check-column"><input type="checkbox" id="benana-select-all" /></th>
@@ -498,7 +498,7 @@ class Benana_Automation_Settings {
             </div>
 
             <h2>آخرین ورودی‌ها</h2>
-            <table class="widefat fixed striped">
+            <table class="widefat fixed striped last-entries">
                 <thead>
                     <tr>
                         <th>شناسه</th>

@@ -57,10 +57,38 @@
             <p class="description">لطفا فایل های نقشه را بصورت جمع آوری و در قالب .zip آپلود بفرمایید</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="hidden" name="project_id" value="<?php echo esc_attr( $view['project']->ID ); ?>" />
-                <input type="hidden" name="benana_action" value="upload_file" />
-                <input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
-                <input type="file" name="benana_project_files[]" multiple />
-                <button type="submit" class="button">ارسال فایل</button>
+               <input type="hidden" name="benana_action" value="upload_file" />
+<input type="hidden" name="benana_action_nonce" value="<?php echo esc_attr( $view['nonce'] ); ?>" />
+
+<input 
+    type="file" 
+    id="benana_project_files" 
+    name="benana_project_files[]" 
+    multiple 
+    style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;"
+/>
+
+<label 
+    for="benana_project_files" 
+    style="
+        display:inline-block;
+        padding:8px 16px;
+        border-radius:12px;
+        background:#fe4d19;
+        color:#fff;
+        font-size:14px;
+        cursor:pointer;
+        margin-left:8px;
+    "
+>انتخاب فایل</label>
+
+<button 
+    type="submit" 
+    class="button"
+>
+    ارسال فایل
+</button>
+
             </form>
         </div>
     <?php endif; ?>

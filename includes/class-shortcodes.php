@@ -63,9 +63,402 @@ class Benana_Automation_Shortcodes {
         add_shortcode( 'benana_pending_stats', array( $this, 'pending_stats_shortcode' ) );
         add_shortcode( 'benana_user_availability', array( $this, 'availability_shortcode' ) );
         add_shortcode( 'project_detail', array( $this, 'project_detail_shortcode' ) );
+		add_shortcode( 'benana_dashboard', array( $this, 'dashboard_shortcode' ) ); // این خط رو اضافه کن
+
         add_action( 'template_redirect', array( $this, 'handle_actions' ) );
+
+}
+    
+public function dashboard_shortcode( $atts ) {
+    $atts = shortcode_atts( array(
+        'show_stats'        => 'yes',
+        'show_chart'        => 'yes',
+        'show_progress'     => 'yes',
+        'show_last_entries' => 'yes',
+        'show_main_table'   => 'yes',
+        'limit_last'        => 10,
+        'per_page'          => 20,
+    ), $atts );
+
+    $status_map     = $this->dashboard_get_status_labels();
+    $status_counts  = $this->dashboard_get_status_counts( $status_map );
+    $recent_entries = $this->dashboard_get_recent_projects( absint( $atts['limit_last'] ) );
+    $top_acceptors  = $this->dashboard_get_top_acceptors();
+    
+    $status_filter = sanitize_text_field( wp_unslash( $_GET['project_status'] ?? '' ) );
+    $paged         = max( 1, absint( $_GET['paged'] ?? 1 ) );
+
+    $query_args = array(
+        'post_type'      => 'project',
+        'posts_per_page' => absint( $atts['per_page'] ),
+        'paged'          => $paged,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    );
+
+    if ( $status_filter ) {
+        $query_args['meta_query'] = array(
+            array(
+                'key'   => 'project_status',
+                'value' => $status_filter,
+            ),
+        );
     }
 
+    $projects  = new WP_Query( $query_args );
+    $provinces = Benana_Automation_Address::get_provinces();
+
+    ob_start();
+    ?>
+    <div class="wrap benana-admin benana-shortcode-dashboard">
+        
+        <?php if ( $atts['show_stats'] === 'yes' ) : ?>
+        <div class="benana-report-grid">
+            <div class="report-card">
+                <h3>مجموع پروژه‌ها</h3>
+                <strong><?php echo esc_html( $status_counts['total'] ?? 0 ); ?></strong>
+            </div>
+            <?php foreach ( $status_map as $status_key => $status_label ) : ?>
+                <div class="report-card">
+                    <h3><?php echo esc_html( $status_label ); ?></h3>
+                    <strong><?php echo esc_html( $status_counts['statuses'][ $status_key ] ?? 0 ); ?></strong>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ( $atts['show_chart'] === 'yes' || $atts['show_progress'] === 'yes' ) : ?>
+        <div class="benana-chart-wrapper">
+            <?php if ( $atts['show_chart'] === 'yes' ) : ?>
+            <div class="benana-chart-card">
+                <h3>نمودار وضعیت‌ها</h3>
+                <?php $total_for_chart = $status_counts['total'] ?: 1; ?>
+                <div class="benana-bar-chart">
+                    <?php foreach ( $status_map as $status_key => $status_label ) :
+                        $count     = $status_counts['statuses'][ $status_key ] ?? 0;
+                        $percent   = round( ( $count / $total_for_chart ) * 100 );
+                        $bar_class = 'status-' . $status_key;
+                        ?>
+                        <div class="benana-bar-row">
+                            <div class="benana-bar-label"><?php echo esc_html( $status_label ); ?></div>
+                            <div class="benana-bar-track">
+                                <span class="benana-bar-fill <?php echo esc_attr( $bar_class ); ?>" style="width: <?php echo esc_attr( $percent ); ?>%"></span>
+                                <span class="benana-bar-count"><?php echo esc_html( $count ); ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ( $atts['show_progress'] === 'yes' ) : ?>
+            <div class="benana-chart-card">
+                <h3>پیشرفت تکمیل</h3>
+                <?php
+                $completed_count = $status_counts['statuses']['completed'] ?? 0;
+                $total_projects  = $status_counts['total'] ?: 0;
+                $completion_pct  = $total_projects ? round( ( $completed_count / $total_projects ) * 100 ) : 0;
+                ?>
+                <div class="benana-progress">
+                    <div class="benana-progress-track">
+                        <span class="benana-progress-fill" style="width: <?php echo esc_attr( $completion_pct ); ?>%"></span>
+                    </div>
+                    <p class="benana-progress-label"><?php echo esc_html( $completion_pct ); ?>٪ از پروژه‌ها تکمیل شده است.</p>
+                </div>
+
+                <?php if ( ! empty( $top_acceptors ) ) : ?>
+                    <h4>فعال‌ترین پذیرنده‌ها</h4>
+                    <table class="table-banana widefat fixed benana-top-acceptors">
+                        <thead>
+                            <tr>
+                                <th>نام کاربر</th>
+                                <th>تعداد پذیرش</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ( $top_acceptors as $acceptor ) : ?>
+                                <tr>
+                                    <td><?php echo esc_html( $acceptor['user']->display_name ); ?></td>
+                                    <td><?php echo esc_html( $acceptor['count'] ); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ( $atts['show_last_entries'] === 'yes' ) : ?>
+        <h2>آخرین ورودی‌ها</h2>
+        <table class="table-banana widefat fixed striped last-entries">
+            <thead>
+                <tr>
+                    <th>شناسه</th>
+                    <th>عنوان</th>
+                    <th>وضعیت</th>
+                    <th>استان/شهر</th>
+                    <th>آخرین بروزرسانی</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                if ( $recent_entries->have_posts() ) :
+                    while ( $recent_entries->have_posts() ) :
+                        $recent_entries->the_post();
+                        $project_id   = get_the_ID();
+                        $province_id  = get_post_meta( $project_id, 'project_province_id', true );
+                        $city_id      = get_post_meta( $project_id, 'project_city_id', true );
+                        $province     = isset( $provinces[ $province_id ] ) ? $provinces[ $province_id ] : '—';
+                        $city         = Benana_Automation_Address::get_city_name( $province_id, $city_id );
+                        $status       = get_post_meta( $project_id, 'project_status', true );
+                        $status_label = $status_map[ $status ] ?? 'نامشخص';
+                        ?>
+                        <tr>
+                            <td>#<?php echo esc_html( $project_id ); ?></td>
+                            <td>
+                                <?php 
+                                $gf_entry_id = get_post_meta( $project_id, 'gf_entry_id', true );
+                                $gf_form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+                                
+                                if ( $gf_entry_id && $gf_form_id ) {
+                                    $gf_link = add_query_arg(
+                                        array(
+                                            'page' => 'gf_entries',
+                                            'view' => 'entry',
+                                            'id'   => $gf_form_id,
+                                            'lid'  => $gf_entry_id,
+                                        ),
+                                        admin_url( 'admin.php' )
+                                    );
+                                    echo '<a href="' . esc_url( $gf_link ) . '">مشاهده پروژه</a>';
+                                } else {
+                                    echo '—';
+                                }
+                                ?>
+                            </td>
+                            <td class="status status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></td>
+                            <td><?php echo esc_html( $province . ' / ' . $city ); ?></td>
+                            <td><?php echo esc_html( get_the_modified_date( 'Y/m/d H:i' ) ); ?></td>
+                        </tr>
+                        <?php
+                    endwhile;
+                    wp_reset_postdata();
+                else :
+                    ?>
+                    <tr><td colspan="5">موردی یافت نشد.</td></tr>
+                    <?php
+                endif;
+                ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+
+        <?php if ( $atts['show_main_table'] === 'yes' ) : ?>
+        <h2 class="ascjnaksjcans">لیست پروژه‌ها</h2>
+        
+        <form method="get" class="benana-filters">
+            <?php if ( is_page() ) : ?>
+                <input type="hidden" name="page_id" value="<?php echo get_the_ID(); ?>" />
+            <?php endif; ?>
+            <label for="project_status">فیلتر وضعیت:</label>
+            <select name="project_status" id="project_status">
+                <option value="">همه وضعیت‌ها</option>
+                <?php foreach ( $status_map as $status_key => $status_label ) : ?>
+                    <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_filter, $status_key ); ?>><?php echo esc_html( $status_label ); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button class="button">اعمال فیلتر</button>
+        </form>
+
+        <table class="table-banana widefat fixed striped main-entries">
+            <thead>
+                <tr>
+                    <th>شناسه</th>
+                    <th>عنوان</th>
+                    <th>ورودی GF</th>
+                    <th>وضعیت</th>
+                    <th>استان/شهر</th>
+                    <th>کارگزاران</th>
+                    <th>پذیرفته‌شده توسط</th>
+                    <th>فایل</th>
+                    <th>تاریخ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                if ( $projects->have_posts() ) :
+                    while ( $projects->have_posts() ) :
+                        $projects->the_post();
+                        $project_id      = get_the_ID();
+                        $province_id     = get_post_meta( $project_id, 'project_province_id', true );
+                        $city_id         = get_post_meta( $project_id, 'project_city_id', true );
+                        $province_label  = isset( $provinces[ $province_id ] ) ? $provinces[ $province_id ] : '—';
+                        $city_label      = Benana_Automation_Address::get_city_name( $province_id, $city_id );
+                        if ( '' === $city_label && ! empty( $city_id ) ) {
+                            $city_label = $city_id;
+                        }
+                        $status          = get_post_meta( $project_id, 'project_status', true );
+                        $status_label    = $status_map[ $status ] ?? 'نامشخص';
+                        $assigned_raw    = get_post_meta( $project_id, 'assigned_users', true );
+                        $assigned_users  = $assigned_raw ? json_decode( $assigned_raw, true ) : array();
+                        $accepted_by     = get_post_meta( $project_id, 'accepted_by', true );
+                        $accepted_user   = $accepted_by ? get_user_by( 'id', $accepted_by ) : false;
+                        $file_url        = get_post_meta( $project_id, 'file_url', true );
+                        $gf_entry_id     = get_post_meta( $project_id, 'gf_entry_id', true );
+                        $gf_form_id      = get_post_meta( $project_id, 'gf_form_id', true );
+                        $gf_link         = ( $gf_entry_id && $gf_form_id ) ? add_query_arg(
+                            array(
+                                'page' => 'gf_entries',
+                                'view' => 'entry',
+                                'id'   => $gf_form_id,
+                                'lid'  => $gf_entry_id,
+                            ),
+                            admin_url( 'admin.php' )
+                        ) : '';
+                        ?>
+                        <tr>
+                            <td>#<?php echo esc_html( $project_id ); ?></td>
+                            <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
+                            <td><?php echo $gf_link ? '<a href="' . esc_url( $gf_link ) . '">مشاهده ورودی</a>' : '—'; ?></td>
+                            <td class="status status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></td>
+                            <td><?php echo esc_html( $province_label . ' / ' . $city_label ); ?></td>
+                            <td><?php echo esc_html( is_array( $assigned_users ) ? count( $assigned_users ) : 0 ); ?></td>
+                            <td><?php echo $accepted_user ? esc_html( $accepted_user->display_name ) : '—'; ?></td>
+                            <td><?php echo $file_url ? '<a href="' . esc_url( $file_url ) . '" target="_blank">مشاهده</a>' : '—'; ?></td>
+                            <td><?php echo esc_html( get_the_date( 'Y/m/d H:i' ) ); ?></td>
+                        </tr>
+                        <?php
+                    endwhile;
+                    wp_reset_postdata();
+                else :
+                    ?>
+                    <tr><td colspan="9">موردی یافت نشد.</td></tr>
+                    <?php
+                endif;
+                ?>
+            </tbody>
+        </table>
+
+        <?php
+        $pagination = paginate_links(
+            array(
+                'total'    => $projects->max_num_pages,
+                'current'  => $paged,
+                'type'     => 'array',
+                'add_args' => array(
+                    'project_status' => $status_filter,
+                ),
+            )
+        );
+
+        if ( $pagination ) {
+            echo '<div class="tablenav"><div class="tablenav-pages">' . wp_kses_post( implode( ' ', $pagination ) ) . '</div></div>';
+        }
+        ?>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+private function dashboard_get_status_labels() {
+    return array(
+        'new'       => 'جدید',
+        'accepted'  => 'پذیرفته‌شده',
+        'completed' => 'تکمیل‌شده',
+    );
+}
+
+private function dashboard_get_status_counts( $status_map ) {
+    global $wpdb;
+    
+    $counts = array();
+    
+    foreach ( $status_map as $status_key => $status_label ) {
+        $count = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID) 
+             FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+             WHERE p.post_type = 'project'
+             AND p.post_status = 'publish'
+             AND pm.meta_key = 'project_status'
+             AND pm.meta_value = %s",
+            $status_key
+        ) );
+        
+        $counts[ $status_key ] = (int) $count;
+    }
+
+    $total = $wpdb->get_var(
+        "SELECT COUNT(*) 
+         FROM {$wpdb->posts} 
+         WHERE post_type = 'project' 
+         AND post_status = 'publish'"
+    );
+
+    return array(
+        'total'    => (int) $total,
+        'statuses' => $counts,
+    );
+}
+
+private function dashboard_get_recent_projects( $limit = 10 ) {
+    return new WP_Query(
+        array(
+            'post_type'      => 'project',
+            'posts_per_page' => $limit,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        )
+    );
+}
+
+private function dashboard_get_top_acceptors( $limit = 3 ) {
+    $projects = get_posts(
+        array(
+            'post_type'      => 'project',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        )
+    );
+
+    $accept_counts = array();
+    foreach ( $projects as $project_id ) {
+        $accepted_by = get_post_meta( $project_id, 'accepted_by', true );
+        if ( empty( $accepted_by ) ) {
+            continue;
+        }
+
+        if ( ! isset( $accept_counts[ $accepted_by ] ) ) {
+            $accept_counts[ $accepted_by ] = 0;
+        }
+        $accept_counts[ $accepted_by ]++;
+    }
+
+    arsort( $accept_counts );
+
+    $top = array();
+    foreach ( $accept_counts as $user_id => $count ) {
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            continue;
+        }
+
+        $top[] = array(
+            'user'  => $user,
+            'count' => $count,
+        );
+
+        if ( count( $top ) >= $limit ) {
+            break;
+        }
+    }
+
+    return $top;
+}
     public function handle_actions() {
         $action     = sanitize_text_field( wp_unslash( $_POST['benana_action'] ?? '' ) );
         $project_id = absint( $_POST['project_id'] ?? 0 );
@@ -610,4 +1003,528 @@ class Benana_Automation_Shortcodes {
         }
 
         if ( ! empty( $form['fields'] ) ) {
-            foreach ( $form['fields'] as $fiel
+            foreach ( $form['fields'] as $field ) {
+                if ( is_array( $field ) && class_exists( 'GF_Fields' ) ) {
+                    $field = GF_Fields::create( $field );
+                }
+
+                if ( ! is_object( $field ) ) {
+                    continue;
+                }
+
+                $fields[] = $field;
+            }
+        }
+
+        if ( class_exists( 'GFCommon' ) ) {
+            foreach ( $fields as $field ) {
+                $field_id = (string) $field->id;
+                $currency = $entry['currency'] ?? '';
+
+                $input_type = is_callable( array( $field, 'get_input_type' ) ) ? $field->get_input_type() : '';
+                if ( in_array( $input_type, array( 'section', 'captcha', 'html', 'password', 'page' ), true ) ) {
+                    continue;
+                }
+
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_id, $field, $protected_fields ) ) {
+                    continue;
+                }
+
+                if ( is_array( $field->fields ) ) {
+                    $field->nestingLevel = 0;
+                }
+
+                $value = class_exists( 'RGFormsModel' ) ? RGFormsModel::get_lead_field_value( $entry, $field ) : rgar( $entry, $field_id );
+
+                $display = $this->get_field_display_html( $field, $value, $entry, $form );
+
+                if ( $this->is_empty_value( $display ) ) {
+                    if ( isset( $snapshot_display[ $field_id ] ) ) {
+                        $display = $snapshot_display[ $field_id ];
+                    } elseif ( isset( $snapshot_entry[ $field_id ] ) ) {
+                        $display = $snapshot_entry[ $field_id ];
+                    } elseif ( isset( $entry[ $field_id ] ) ) {
+                        $display = $entry[ $field_id ];
+                    }
+
+                    $display = $this->get_field_display_html( $field, $display, $entry, $form );
+                }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display ) ),
+                );
+                $handled[] = $field_id;
+
+                if ( is_object( $field ) && isset( $field->inputs ) && is_array( $field->inputs ) ) {
+                    foreach ( $field->inputs as $input ) {
+                        if ( isset( $input['id'] ) ) {
+                            $handled[] = (string) $input['id'];
+                        }
+                    }
+                }
+
+                if ( $this->is_empty_value( $display ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $this->get_field_display_label( $field, $field_id, $form, $label_map );
+
+                if ( isset( $label_map[ $field_id ] ) && ( '' === trim( (string) $label ) || (string) $field_id === trim( (string) $label ) ) ) {
+                    $label = $label_map[ $field_id ];
+                }
+
+                if ( $this->is_empty_value( $display ) ) {
+                    $display = '&nbsp;';
+                }
+
+                $render[]  = array(
+                    'key'   => $field_id,
+                    'label' => $label,
+                    'value' => $this->decode_unicode_literals( $display ),
+                );
+                $handled[] = $field_id;
+            }
+        }
+
+        if ( empty( $render ) && ! empty( $entry ) ) {
+            foreach ( $entry as $field_id => $display_value ) {
+                $field_key = (string) $field_id;
+                if ( in_array( $field_key, $handled, true ) ) {
+                    continue;
+                }
+
+                if ( ! preg_match( '/^\d+(?:\.\d+)?$/', $field_key ) ) {
+                    continue;
+                }
+
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    if ( isset( $snapshot_display[ $field_key ] ) ) {
+                        $display_value = $snapshot_display[ $field_key ];
+                    } elseif ( isset( $snapshot_entry[ $field_key ] ) ) {
+                        $display_value = $snapshot_entry[ $field_key ];
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
+                if ( '' === trim( (string) $label ) ) {
+                    continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
+                }
+
+                $render[] = array(
+                    'key'   => $field_key,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
+                );
+            }
+        }
+
+        if ( empty( $render ) && ! empty( $snapshot_display ) ) {
+            foreach ( $snapshot_display as $field_id => $display_value ) {
+                $field_key = (string) $field_id;
+                if ( in_array( $field_key, $handled, true ) ) {
+                    continue;
+                }
+
+                if ( ! preg_match( '/^\d+(?:\.\d+)?$/', $field_key ) ) {
+                    continue;
+                }
+
+                if ( ! $is_accepted && $this->should_hide_before_acceptance( $field_key, null, $protected_fields ) ) {
+                    continue;
+                }
+
+                if ( $this->is_empty_value( $display_value ) && ! $display_empty ) {
+                    continue;
+                }
+
+                $label = $label_map[ $field_key ] ?? $this->resolve_field_label( $field_key, $form, $label_map );
+                if ( '' === trim( (string) $label ) ) {
+                    continue;
+                }
+
+                if ( class_exists( 'GFFormsModel' ) && ! empty( $form ) ) {
+                    $field_obj = GFFormsModel::get_field( $form, $field_key );
+                    if ( $field_obj ) {
+                        $display_value = $this->get_field_display_html( $field_obj, $display_value, $entry, $form );
+                    }
+                }
+
+                if ( $this->is_empty_value( $display_value ) ) {
+                    $display_value = '&nbsp;';
+                }
+
+                $render[] = array(
+                    'key'   => $field_key,
+                    'label' => $label,
+                    'value' => $this->ensure_html_value( $this->decode_unicode_literals( $display_value ) ),
+                );
+            }
+        }
+
+        return $render;
+    }
+
+    private function ensure_html_value( $value ) {
+        if ( is_array( $value ) ) {
+            return array_map( array( $this, 'ensure_html_value' ), $value );
+        }
+
+        if ( ! is_string( $value ) ) {
+            return $value;
+        }
+
+        if ( false !== strpos( $value, '<' ) && false !== strpos( $value, '>' ) ) {
+            return $value;
+        }
+
+        $trimmed = trim( $value );
+
+        if ( filter_var( $trimmed, FILTER_VALIDATE_URL ) ) {
+            return '<a href="' . esc_url( $trimmed ) . '" target="_blank" rel="noreferrer noopener">' . esc_html( $trimmed ) . '</a>';
+        }
+
+        return $value;
+    }
+
+    private function map_form_fields( $form ) {
+        $map = array();
+
+        if ( empty( $form['fields'] ) ) {
+            return $map;
+        }
+
+        foreach ( $form['fields'] as $field ) {
+            $fid = is_object( $field ) ? $field->id : ( $field['id'] ?? '' );
+            if ( '' === $fid ) {
+                continue;
+            }
+
+            $map[ (string) $fid ] = $field;
+        }
+
+        return $map;
+    }
+
+    private function is_default_value( $field_id, $raw_value, $field_map ) {
+        if ( $this->is_empty_value( $raw_value ) ) {
+            return false;
+        }
+
+        $parent_id = ( strpos( (string) $field_id, '.' ) !== false ) ? explode( '.', (string) $field_id )[0] : $field_id;
+        $field     = $field_map[ (string) $field_id ] ?? $field_map[ (string) $parent_id ] ?? null;
+
+        if ( ! $field ) {
+            return false;
+        }
+
+        $defaults = array();
+        if ( isset( $field->defaultValue ) && '' !== trim( (string) $field->defaultValue ) ) {
+            $defaults[] = $field->defaultValue;
+        }
+
+        if ( isset( $field->inputs ) && is_array( $field->inputs ) ) {
+            foreach ( $field->inputs as $input ) {
+                if ( (string) ( $input['id'] ?? '' ) === (string) $field_id && isset( $input['defaultValue'] ) ) {
+                    $defaults[] = $input['defaultValue'];
+                }
+            }
+        }
+
+        if ( empty( $defaults ) ) {
+            return false;
+        }
+
+        if ( is_array( $raw_value ) ) {
+            $raw_value = implode( ' ', array_map( 'wp_strip_all_tags', $raw_value ) );
+        }
+
+        $raw_clean = wp_strip_all_tags( (string) $raw_value );
+
+        foreach ( $defaults as $default ) {
+            if ( trim( (string) $default ) === trim( $raw_clean ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function format_entry_datetime( $entry, $project_id ) {
+        $raw = $entry['date_created'] ?? '';
+
+        if ( empty( $raw ) ) {
+            $raw = get_post_time( 'Y-m-d H:i:s', true, $project_id );
+        }
+
+        $timestamp = $raw ? ( function_exists( 'GFCommon' ) ? GFCommon::get_local_timestamp( $raw ) : strtotime( $raw ) ) : false;
+        if ( ! $timestamp ) {
+            $timestamp = get_post_timestamp( $project_id );
+        }
+
+        return $timestamp ? wp_date( 'Y/m/d H:i', $timestamp ) : '';
+    }
+
+    private function translate_status( $status ) {
+        $map = array(
+            'new'           => 'در انتظار پذیرش',
+            'accepted'      => 'در حال انجام',
+            'file_uploaded' => 'فایل ثبت شده',
+            'completed'     => 'تکمیل شده',
+            'rejected'      => 'رد شده',
+            'approved'      => 'تأیید شده',
+        );
+
+        return $map[ $status ] ?? $status;
+    }
+
+    private function ensure_custom_upload_dir() {
+        $path = trailingslashit( WP_CONTENT_DIR ) . 'project_files';
+        if ( ! file_exists( $path ) ) {
+            wp_mkdir_p( $path );
+        }
+    }
+
+    public function custom_upload_dir( $dirs ) {
+        $base_dir = trailingslashit( WP_CONTENT_DIR ) . 'project_files';
+        $base_url = 'https://naghshehbardar.com/project_files';
+        $subdir   = ltrim( (string) ( $dirs['subdir'] ?? '' ), '/' );
+
+        wp_mkdir_p( trailingslashit( $base_dir ) . $subdir );
+
+        $dirs['path']    = trailingslashit( $base_dir ) . $subdir;
+        $dirs['basedir'] = $base_dir;
+        $dirs['url']     = trailingslashit( $base_url ) . $subdir;
+        $dirs['baseurl'] = $base_url;
+
+        return $dirs;
+    }
+
+    public function history_shortcode() {
+        if ( ! is_user_logged_in() ) {
+            return '<p>برای مشاهده تاریخچه وارد شوید.</p>';
+        }
+        $user_id = get_current_user_id();
+        $search  = sanitize_text_field( wp_unslash( $_GET['benana_history_search'] ?? '' ) );
+        $args    = array(
+            'post_type'  => 'project',
+            's'          => $search,
+            'meta_query' => array(
+                array(
+                    'key'   => 'client_user_id',
+                    'value' => $user_id,
+                ),
+            ),
+        );
+        $projects = get_posts( $args );
+        ob_start();
+        include BENANA_AUTOMATION_PATH . 'templates/history.php';
+        return ob_get_clean();
+    }
+
+    public function stats_shortcode( $atts ) {
+        $atts    = shortcode_atts( array( 'type' => 'completed_count' ), $atts );
+        $user_id = get_current_user_id();
+        $count   = 0;
+        if ( $atts['type'] === 'pending_count' ) {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
+                    'relation' => 'AND',
+                    array(
+                        'relation' => 'OR',
+                        array(
+                            'key'     => 'assigned_users',
+                            'value'   => $user_id,
+                            'compare' => 'LIKE',
+                        ),
+                        array(
+                            'key'   => 'accepted_by',
+                            'value' => $user_id,
+                        ),
+                    ),
+                    array(
+                        'key'   => 'project_status',
+                        'value' => 'new',
+                    ),
+                ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
+            );
+            $query = new WP_Query( $args );
+            $count = $query->post_count;
+        }
+        if ( $atts['type'] === 'completed_count' ) {
+            $args = array(
+                'post_type'      => 'project',
+                'posts_per_page' => -1,
+                'meta_query'     => array(
+                    array(
+                        'key'   => 'accepted_by',
+                        'value' => $user_id,
+                    ),
+                    array(
+                        'key'   => 'project_status',
+                        'value' => 'completed',
+                    ),
+                ),
+                'no_found_rows'  => true,
+                'fields'         => 'ids',
+            );
+            $query = new WP_Query( $args );
+            $count = $query->post_count;
+        }
+        return (string) intval( $count );
+    }
+
+
+
+    public function pending_stats_shortcode( $atts ) {
+        $atts         = (array) $atts;
+        $atts['type'] = 'pending_count';
+        return $this->stats_shortcode( $atts );
+    }
+
+public function availability_shortcode() {
+    if ( ! is_user_logged_in() ) {
+        return '<p class="login-error-benana">برای مدیریت وضعیت خود ابتدا وارد شوید.</p>';
+    }
+
+    $user_id = get_current_user_id();
+    $message = '';
+
+    // فقط وضعیت فعالیت از فرم خوانده می‌شود
+    if (
+        isset( $_POST['benana_availability_nonce'] )
+        && wp_verify_nonce(
+            sanitize_text_field( wp_unslash( $_POST['benana_availability_nonce'] ) ),
+            'benana_availability'
+        )
+    ) {
+        // اگر چک‌باکس وجود داشته باشد یعنی فعاله، اگر نباشد یعنی غیرفعال
+        $is_active = isset( $_POST['user_is_active'] ) ? '1' : '0';
+        $inactive_until = ( '1' === $is_active ) ? '' : -1;
+
+        // استان و شهر دیگر از فرم نمی‌آیند و اینجا آپدیت نمی‌شوند
+        update_user_meta( $user_id, 'user_is_active', $is_active );
+        update_user_meta( $user_id, 'user_inactive_until', $inactive_until );
+
+        $message = '<div class="benana-alert success">وضعیت شما به‌روزرسانی شد.</div>';
+    }
+
+    // فقط برای نمایش
+    $province_id    = get_user_meta( $user_id, 'user_province_id', true );
+    $city_ids       = (array) get_user_meta( $user_id, 'user_city_ids', true );
+    $is_active      = get_user_meta( $user_id, 'user_is_active', true );
+    $inactive_until = get_user_meta( $user_id, 'user_inactive_until', true );
+
+    if ( '' === $is_active ) {
+        $is_active = '1';
+    }
+
+    $provinces = Benana_Automation_Address::get_provinces();
+    $cities    = Benana_Automation_Address::get_cities();
+
+    // متن خوانا برای استان و شهرها
+    $province_name = '';
+    $city_names    = array();
+
+    if ( $province_id && isset( $provinces[ $province_id ] ) ) {
+        $province_name = $provinces[ $province_id ];
+    }
+
+    if ( $province_id && isset( $cities[ $province_id ] ) ) {
+        foreach ( $city_ids as $cid ) {
+            if ( isset( $cities[ $province_id ][ $cid ] ) ) {
+                $city_names[] = $cities[ $province_id ][ $cid ];
+            }
+        }
+    }
+
+    ob_start();
+    ?>
+    <div class="benana-availability-form">
+        <?php echo $message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+        <form method="post">
+            <?php wp_nonce_field( 'benana_availability', 'benana_availability_nonce' ); ?>
+
+            <!-- ۱. اطلاعات: کاربر کجا می‌تونه فعالیت کنه -->
+            <div class="field">
+                <label>محدوده فعالیت شما</label>
+                <p class="benana-coverage">
+                    <?php
+                    if ( $province_name ) {
+                        echo 'استان ' . esc_html( $province_name );
+
+                        if ( ! empty( $city_names ) ) {
+                            echo ' – شهرهای: ' . esc_html( implode( '، ', $city_names ) );
+                        } else {
+                            echo ' (شهر ثبت‌شده‌ای وجود ندارد)';
+                        }
+                    } else {
+                        echo 'استان و شهرهای فعالیت شما هنوز ثبت نشده است.';
+                    }
+                    ?>
+                </p>
+            </div>
+
+            <!-- ۲. فقط وضعیت فعالیت قابل تغییر است -->
+            <div class="field benana-availability">
+                <label>وضعیت فعالیت</label>
+                <label class="benana-toggle">
+                    <input
+                        type="checkbox"
+                        name="user_is_active"
+                        value="1"
+                        <?php checked( $is_active, '1' ); ?>
+                        onchange="this.form.submit();"  <!-- این خط باعث اتو‌سیو می‌شود -->
+                    <span><?php echo $is_active === '1' ? 'فعال هستم' : 'غیرفعال هستم'; ?></span>
+                </label>
+            </div>
+
+            <!-- ۳. دکمه‌ی ذخیره مخفی، فقط برای fallback اگر JS غیرفعال بود -->
+            <button type="submit" class="button button-primary benana-availability-submit" style="display:none;">
+                ثبت تغییرات
+            </button>
+        </form>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+	}

@@ -1,284 +1,1463 @@
+/* دسکتاپ */
+@media (min-width: 768px) {
+    .last-entries, .ascjnaksjcans {
+        display: none !important;
+    }
+    .main-entries {
+        display: table !important;
+    }
+}
+/* موبایل */
+@media (max-width: 767px) {
+    .last-entries {
+        display: table !important; /* نمایش جدول کوچک */
+    }
+    .main-entries, .benana-filters, .ascjnaksjcans {
+        display: none !important; /* جدول بزرگ پنهان */
+		
+    }
+}
+/* ===== From theme.css (FULL PRIORITY) ===== */
+
+html, body, div, span, ... { box-sizing: border-box; } /* (طولانی — کوتاه‌شده برای خوانایی) */
+
+/* RESET + GLOBALS */
 :root {
-    --benana-primary: #04003F;
-    --benana-accent: #6a66d7;
-    --benana-surface: #f6f6fb;
-    --benana-text: #1b1b2f;
+    --primary-color: #04003F;
+    --secondary-color: #6a66d7;
+    --accent-color: #ff9b44;
 }
 
-.benana-inbox, .benana-history, .benana-stats {
-    direction: rtl;
-    text-align: right;
-    font-family: 'Vazirmatn', sans-serif;
-    color: var(--benana-text);
+/* کلی استایل قالب ... */
+
+/* ===============================
+   1) REPORT GRID (theme version)
+================================= */
+
+.benana-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 25px 0;
 }
 
-.benana-filter {
-    margin-bottom: 16px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
+.report-card {
+    background: #ffffff;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid #eef1f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: all .2s ease;
 }
 
-.benana-filter input[type="text"],
-.benana-filter select {
-    padding: 10px 12px;
-    border: 1px solid #d7d7e4;
-    border-radius: 10px;
-    background: #fff;
-    min-width: 180px;
+.report-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
 }
 
-.benana-filter .button {
-    background: var(--benana-primary);
-    border-color: var(--benana-primary);
-    color: #fff;
-    border-radius: 10px;
-    padding: 10px 18px;
-}
-
-.benana-card {
-    border: 1px solid #e5e7f4;
-    padding: 18px 18px 14px;
-    margin-bottom: 14px;
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(4,0,63,0.06);
-    position: relative;
-    overflow: hidden;
-}
-
-.benana-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, rgba(4,0,63,0.05), rgba(106,102,215,0.05));
-    pointer-events: none;
-}
-
-.benana-card strong {
-    font-size: 17px;
-    display: block;
-    margin-bottom: 6px;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-card .meta {
-    color: #666;
-    font-size: 13px;
-    margin: 4px 0;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-actions {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-card .benana-eye {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--benana-primary);
-    color: #fff;
-    text-decoration: none;
-    box-shadow: 0 6px 20px rgba(4,0,63,0.25);
-}
-
-.benana-card .benana-eye svg {
-    width: 18px;
-    height: 18px;
-    fill: currentColor;
-}
-
-.benana-card .benana-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: var(--benana-surface);
-    border-radius: 10px;
-    font-size: 12px;
-    color: var(--benana-primary);
+.report-card h3 {
+    font-size: 15px;
     font-weight: 600;
+    color: #3f3f46;
+    margin-bottom: 12px;
 }
 
-.benana-card .benana-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--benana-accent);
+.report-card strong {
+    font-size: 26px;
+    font-weight: 800;
+    color: #4f46e5;
 }
 
-.benana-project-detail {
+@media (max-width: 600px) {
+    .benana-report-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+
+/* ===============================
+   2) TABLE-BANANA (theme version)
+================================= */
+
+.table-banana {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+}
+
+.table-banana thead th {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    padding: 10px 12px;
+}
+
+.table-banana tbody tr {
+    background: #ffffff;
+    border: 1px solid #eceff3;
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: 0.2s;
+}
+
+.table-banana tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.table-banana tbody td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.table-banana td.status {
+    padding: 4px 10px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.table-banana .status-new,
+.table-banana .status-none {
+    background: #f6f6f6;
+    color: #555;
+}
+
+.table-banana .status-accepted {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.table-banana .status-file_uploaded {
+    background: #fff7e6;
+    color: #b26b00;
+}
+
+.table-banana .status-completed {
+    background: #e6f1ff;
+    color: #0a4fb2;
+}
+
+
+/* ===============================
+   3) CHART CARD (theme version)
+================================= */
+
+.benana-chart-card {
     background: #fff;
-    border: 1px solid #e5e7f4;
     border-radius: 16px;
     padding: 22px;
-    box-shadow: 0 12px 32px rgba(4,0,63,0.07);
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.07);
+    border: 1px solid #f1f1f4;
+    margin-bottom: 25px;
 }
 
-.benana-project-detail::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(4,0,63,0.04), rgba(106,102,215,0.05));
-    pointer-events: none;
-}
-
-.benana-project-detail h3 {
-    margin-top: 0;
-    font-size: 20px;
-}
-
-.benana-project-detail .benana-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    position: relative;
-    z-index: 1;
-    margin-bottom: 14px;
-}
-
-.benana-status-tag {
-    background: var(--benana-surface);
-    color: var(--benana-primary);
-    padding: 6px 12px;
-    border-radius: 12px;
+.benana-chart-card h3 {
+    font-size: 18px;
     font-weight: 700;
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
+    color: #222;
+    margin-bottom: 18px;
 }
 
-.benana-status-tag .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--benana-accent);
-}
-
-.benana-alert {
-    position: relative;
-    z-index: 1;
-    padding: 12px 14px;
-    border-radius: 12px;
-    margin-bottom: 14px;
-}
-
-.benana-alert.success { background: #e6f7f1; color: #0a6f4f; border: 1px solid #b6e4cf; }
-.benana-alert.warning { background: #fff4e5; color: #8a4b00; border: 1px solid #ffd8a8; }
-
-.benana-actions-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin: 12px 0 6px;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-action-card {
-    border: 1px solid #e0e3f0;
-    border-radius: 14px;
-    padding: 12px;
-    background: #fff;
-    box-shadow: 0 8px 22px rgba(4,0,63,0.05);
-    text-align: center;
-}
-
-.benana-action-card .icon {
-    display: inline-flex;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-    font-weight: 700;
-}
-
-.benana-action-card.accept .icon { background: rgba(16, 168, 115, 0.15); color: #0f8c64; }
-.benana-action-card.reject .icon { background: rgba(200, 16, 68, 0.15); color: #c81044; }
-
-.benana-action-card .button {
-    width: 100%;
-    border-radius: 10px;
-    padding: 9px;
-}
-
-.benana-upload-box {
-    margin-top: 14px;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px dashed #cfd3ec;
-    background: #f8f8ff;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-upload-box h4 { margin-top: 0; }
-
-.benana-upload-box input[type="file"] {
-    margin: 8px 0;
-}
-
-.benana-entry-fields {
-    margin-top: 18px;
-    position: relative;
-    z-index: 1;
-}
-
-.benana-field-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-}
-
-.benana-entry-fields .benana-field {
-    padding: 12px;
-    border: 1px solid #eceff7;
-    border-radius: 12px;
-    background: #fff;
-    box-shadow: 0 6px 18px rgba(4,0,63,0.04);
-}
-
-.benana-entry-fields .benana-field__label {
-    display: block;
-    color: #6b7280;
+.benana-chart-card h4 {
+    font-size: 15px;
     font-weight: 600;
-    margin-bottom: 6px;
+    margin: 25px 0 12px;
 }
 
-.benana-entry-fields .benana-field__value {
-    display: block;
-    font-weight: 700;
-    color: var(--benana-primary);
+/* BAR CHART */
+
+.benana-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
 }
 
-.benana-entry-fields .benana-field__label {
-    display: block;
-    color: #6b7280;
+.benana-bar-label {
+    width: 120px;
+    font-size: 14px;
     font-weight: 500;
 }
 
-@media (max-width: 640px) {
-    .benana-card { padding-left: 64px; }
-    .benana-card .benana-eye { left: 12px; }
+.benana-bar-track {
+    flex: 1;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
 }
+
+.benana-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.benana-bar-fill.status-new { background: #fe4d19; }
+.benana-bar-fill.status-accepted { background: #398ef1; }
+.benana-bar-fill.status-completed { background: #10b981; }
+
+.benana-bar-count {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* PROGRESS BAR */
+
+.benana-progress {
+    margin-bottom: 20px;
+}
+
+.benana-progress-track {
+    width: 100%;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+
+.benana-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #0bbf89);
+    border-radius: 8px;
+    transition: width .4s ease;
+}
+
+
+/* ===============================
+   4) CHART LAYOUT
+================================= */
+
+.benana-chart-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .benana-chart-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ======================================================
+   ===== From plugin.css (ONLY WHAT THEME DID NOT HAVE) =====
+   ====================================================== */
+
+/* بخش‌هایی از plugin.css که در theme.css نبود */
+
+.benana-filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin: 12px 0;
+}
+
+.benana-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+/* نسخه سبک‌تر city-grid */
+.benana-city-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.benana-city-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+/* status-tag که theme نداشت */
+.status-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #f1f1f1;
+    font-size: 12px;
+}
+/* دسکتاپ */
+@media (min-width: 768px) {
+    .last-entries, .ascjnaksjcans {
+        display: none !important;
+    }
+    .main-entries {
+        display: table !important;
+    }
+}
+/* موبایل */
+@media (max-width: 767px) {
+    .last-entries {
+        display: table !important; /* نمایش جدول کوچک */
+    }
+    .main-entries, .benana-filters, .ascjnaksjcans {
+        display: none !important; /* جدول بزرگ پنهان */
+		
+    }
+}
+/* ===========================
+   گزارش‌ها (کارت‌های بالایی)
+=========================== */
+.benana-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 25px 0;
+}
+
+.report-card {
+    background: #fff;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid #eef1f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: .2s ease;
+}
+
+.report-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.09);
+}
+
+.report-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #3f3f46;
+    margin-bottom: 12px;
+}
+
+.report-card strong {
+    font-size: 26px;
+    font-weight: 800;
+    color: #4f46e5;
+}
+
+@media (max-width: 600px) {
+    .benana-report-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ===========================
+   جدول زیبا table-banana
+=========================== */
+.table-banana {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+}
+
+.table-banana thead th {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    padding: 10px 12px;
+}
+
+.table-banana tbody tr {
+    background: #fff;
+    border: 1px solid #eceff3;
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: .2s ease;
+}
+
+.table-banana tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.table-banana tbody td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.table-banana td.status {
+
+    padding: 4px 10px;
+
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.table-banana .status-new { background: #f6f6f6; color: #555; }
+.table-banana .status-none { background: #f6f6f6; color: #555; }
+.table-banana .status-accepted { background: #ecfdf5; color: #047857; }
+.table-banana .status-file_uploaded { background: #fff7e6; color: #b26b00; }
+.table-banana .status-completed { background: #e6f1ff; color: #0a4fb2; }
+
+/* ===========================
+   کارت چارت‌ها
+=========================== */
+.benana-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.07);
+    border: 1px solid #f1f1f4;
+    margin-bottom: 25px;
+}
+
+.benana-chart-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 18px;
+}
+
+.benana-chart-card h4 {
+    margin: 25px 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* ===========================
+   بار چارت (نمودار وضعیت‌ها)
+=========================== */
+.benana-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.benana-bar-label {
+    width: 120px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+}
+
+.benana-bar-track {
+    flex-grow: 1;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.benana-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.benana-bar-fill.status-new { background: #fe4d19; }
+.benana-bar-fill.status-accepted { background: #398ef1; }
+.benana-bar-fill.status-completed { background: #10b981; }
+
+.benana-bar-count {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+}
+
+@media (max-width: 600px) {
+    .benana-bar-row {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .benana-bar-label {
+        width: auto;
+    }
+}
+
+/* ===========================
+   پیشرفت (progress chart)
+=========================== */
+.benana-progress {
+    margin-bottom: 20px;
+}
+
+.benana-progress-track {
+    width: 100%;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.benana-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #0bbf89);
+    border-radius: 8px;
+    transition: width .4s ease;
+}
+
+.benana-progress-label {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #444;
+    font-weight: 500;
+}
+
+/* ===========================
+   جدول فعال‌ترین پذیرنده‌ها
+=========================== */
+.benana-top-acceptors {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8e8ec;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+.benana-top-acceptors thead th {
+    background: #fafafa;
+    padding: 14px 10px;
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.benana-top-acceptors tbody td {
+    padding: 12px 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.benana-top-acceptors tbody tr:hover td {
+    background: #f9fafc;
+}
+
+.benana-top-acceptors tbody td:first-child {
+    color: #fe4d19;
+    font-weight: 600;
+}
+
+/* ===========================
+   قرار گرفتن دو چارت کنار هم
+=========================== */
+.benana-chart-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .benana-chart-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+/* 
+Theme Name: Hello Elementor Child
+Theme URI: https://github.com/elementor/hello-theme-child/
+Description: Hello Elementor Child is a child theme of Hello Elementor, created by Elementor team
+Author: Elementor Team
+Author URI: https://elementor.com/
+Template: hello-elementor
+Version: 2.0.0
+Text Domain: hello-elementor-child
+License: GNU General Public License v3 or later.
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Tags: flexible-header, custom-colors, custom-menu, custom-logo, editor-style, featured-images, rtl-language-support, threaded-comments, translation-ready
+*/
+/* ✖️ دسترسی نداشتن */
+.benana-gf-settings {
+    display: none !important;
+}
+
+/* دسکتاپ */
+@media (min-width: 768px) {
+    .last-entries, .ascjnaksjcans {
+        display: none !important;
+    }
+    .main-entries {
+        display: table !important;
+    }
+}
+/* موبایل */
+@media (max-width: 767px) {
+    .last-entries {
+        display: table !important; /* نمایش جدول کوچک */
+    }
+    .main-entries, .benana-filters, .ascjnaksjcans {
+        display: none !important; /* جدول بزرگ پنهان */
+		
+    }
+}
+.benana-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin: 25px 0;
+}
+
+.benana-report-grid .report-card {
+    background: #ffffff;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid #eef1f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: all .2s ease;
+}
+
+.benana-report-grid .report-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.09);
+}
+
+.benana-report-grid .report-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #3f3f46;
+    margin-bottom: 12px;
+}
+
+.benana-report-grid .report-card strong {
+    font-size: 26px;
+    font-weight: 800;
+    color: #4f46e5;
+}
+/* جدول مدرن */
+.table-banana {
+    width: 100%;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+}
+
+/* ردیف‌های جدول */
+.table-banana tbody tr {
+    background: #ffffff;
+    border: 1px solid #eceff3;
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: 0.2s;
+}
+
+.table-banana tbody tr:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+/* سلول‌های داخل ردیف */
+.table-banana tbody td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* هدر */
+.table-banana thead th {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    padding: 10px 12px;
+    border-bottom: none !important;
+}
+
+/* لینک داخل عنوان */
+.table-banana tbody td a {
+    font-weight: 600;
+    color: #4f46e5;
+    text-decoration: none;
+}
+.table-banana tbody td a:hover {
+    text-decoration: underline;
+}
+
+/* وضعیت‌ها */
+.table-banana td.status {
+    font-weight: 700;
+    padding: 8px 14px;
+}
+
+/* جدید */
+.table-banana .status-new {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+
+/* پذیرفته شده */
+.table-banana .status-accepted {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+/* تکمیل‌شده */
+.table-banana .status-done {
+    background: #f0f9ff;
+    color: #075985;
+    border: 1px solid #bae6fd;
+}
+.benana-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.07);
+    border: 1px solid #f1f1f4;
+    margin-bottom: 25px;
+}
+
+.benana-chart-card h3 {
+    margin: 0 0 18px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+}
+
+/* ردیف‌ها */
+.benana-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.benana-bar-label {
+    width: 120px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+}
+
+/* بدنه بار */
+.benana-bar-track {
+    flex-grow: 1;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* مقدار عددی */
+.benana-bar-count {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #555;
+    font-weight: 600;
+}
+
+/* رنگ‌های پرکننده */
+.benana-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 8px;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+/* رنگ‌ها */
+.benana-bar-fill.status-new {
+    background: #fe4d19;
+}
+
+.benana-bar-fill.status-accepted {
+    background: #398ef1;
+}
+
+.benana-bar-fill.status-completed {
+    background: #10b981;
+}
+
+/* ریسپانسیو */
+@media (max-width: 600px) {
+
+    .benana-bar-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .benana-bar-label {
+        width: auto;
+        margin-bottom: 4px;
+    }
+
+    .benana-bar-track {
+        width: 100%;
+    }
+}
+/* کارت اصلی */
+.benana-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.07);
+    border: 1px solid #f1f1f4;
+    margin-bottom: 25px;
+}
+
+.benana-chart-card h3 {
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+}
+
+.benana-chart-card h4 {
+    margin: 25px 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* ===== پیشرفت تکمیل ===== */
+
+.benana-progress {
+    margin-bottom: 20px;
+}
+
+.benana-progress-track {
+    width: 100%;
+    height: 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.benana-progress-fill {
+    display: block;
+    height: 100%;
+    background: #10b981; /* سبز آرام برای پیشرفت */
+    border-radius: 8px;
+    transition: width .4s ease;
+}
+
+.benana-progress-label {
+    margin-top: 8px;
+    color: #444;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ===== جدول فعال‌ترین پذیرنده‌ها ===== */
+/* کل جدول فقط زیباتر می‌شود، بدون تغییر layout */
+.benana-top-acceptors {
+    background: #ffffff;
+    border: 1px solid #e8e8ec;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+/* هدر – فقط رنگ و تایپوگرافی */
+.benana-top-acceptors thead th {
+    background: #fafafa;
+    color: #444;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 14px 10px;
+    border-bottom: 1px solid #ececf0;
+}
+
+/* بدنه – فقط رنگ و زیبایی */
+.benana-top-acceptors tbody td {
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    padding: 12px 10px;
+    border-bottom: 1px solid #f1f1f4;
+}
+
+/* آخرین ردیف */
+.benana-top-acceptors tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* هاور – بدون تغییر position و layout */
+.benana-top-acceptors tbody tr:hover td {
+    background: #f9fafc;
+}
+
+/* فقط رنگ شماره موبایل (اختیاری) */
+.benana-top-acceptors tbody td:first-child {
+    color: #fe4d19;
+    font-weight: 600;
+}
+/* موبایل: دقیقاً دو ستونه */
+@media (max-width: 600px) {
+    .benana-report-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+.benana-chart-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+/* موبایل → زیر هم */
+@media (max-width: 900px) {
+    .benana-chart-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+.noaccess-error-benana {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    color: #b91c1c;
+}
+.noaccess-error-benana,
+.notfound-error-benana,
+.login-error-benana,
+.not-selected-benana {
+    padding: 14px 20px;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+    margin: 15px 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    backdrop-filter: blur(4px);
+    line-height: 1.9;
+}
+
+/* ❌ پروژه پیدا نشد */
+.notfound-error-benana {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+}
+
+/* ⚠️ خطای ورود */
+.login-error-benana {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+}
+
+/* ⚠️ موردی انتخاب نشده */
+.not-selected-benana {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+}
+.benana-field__value {
+    word-break: break-all;
+}
+.image-choices-choice-text{
+	font-family: vazirmatn !important;
+}
+.uael-gf-select-custom::after{
+	display: none
+}
+.ums-logo-light{
+max-width: 30% !important;
+}
+.body.ums-light-theme{
+	background-size: auto !impoortant
+}
+button.gf-osm-locate-btn, button.gf-osm-search-btn, .gf-osm-search {
+    font-family: Vazirmatn !important;
+}
+.gform_required_legend{
+	display:none;
+}
+.gf-osm-toolbar{
+	z-index:900 !important;
+}
+.benana-actions-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #224677;
+    padding: 6px 10px;
+    border-radius: 35px;
+    width: 100%;
+    margin: 0 auto; 
+    gap: 4px;
+}
+
+.benana-action-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    padding: 6px 16px;
+    border-radius: 26px;
+    cursor: pointer;
+    gap: 6px;
+	 border: 1px solid #E3E6FF;
+    min-width: 50%; 
+              
+}
+
+.benana-action-card .icon {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+}
+
+
+.benana-action-card.accept .icon {
+    color: green;
+}
+
+.benana-action-card.reject .icon {
+    color: red; 
+}
+
+.benana-action-card button {
+    background: none;
+    border: none;
+    font-size: 16px; 
+    font-weight: 600;
+    color: black;
+    cursor: pointer;
+    padding: 0;
+}
+
+
+.benana-action-card button.button,
+.benana-action-card button.button-primary {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.benana-action-card:hover button {
+    color: black;
+}
+
+.benana-entry-fields {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e6e6e6;
+    margin-top: 20px;
+}
+
+.benana-entry-fields h4 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: right;
+    color: #0A003A;
+}
+
+
+.benana-field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 22px 26px;
+}
+
+
+.benana-field {
+    background: #F7F8FF;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid #eceefe;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 90px;
+    transition: 0.2s ease;
+}
+
+
+.benana-field:hover {
+    background: #f1f3ff;
+    border-color: #d7dbff;
+}
+
+
+.benana-field strong {
+    font-size: 17px;
+    color: #0A003A;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+
+.benana-field div {
+    font-size: 15px;
+    color: #444;
+    line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+    .benana-entry-fields {
+        padding: 20px;
+    }
+
+    .benana-field {
+        padding: 16px 18px;
+        min-height: 80px;
+    }
+
+    .benana-entry-fields h4 {
+        font-size: 20px;
+    }
+}
+
+
+.benana-upload-box input[type="file"] {
+    color: transparent;
+	font-size:0rem;
+}
+
+.benana-upload-box input[type="file"]::file-selector-button {
+    background: #0A003A;
+    color: #ffffff;
+    padding: 10px 26px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+.benana-upload-box input[type="file"]:hover::file-selector-button {
+    background: #14044F;
+}
+
+.benana-upload-box .button {
+    background: #ffffff;
+    padding: 10px 26px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 30px;
+    border: 2px solid #0A003A;
+    color: #0A003A !important;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+
+.benana-upload-box .button:hover {
+    background: #0A003A;
+    color: #ffffff !important;
+}
+
+ 
+.benana-upload-box form {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap; 
+}
+
+@media (max-width: 480px) {
+
+    .benana-upload-box form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px; 
+    }
+
+
+    .benana-upload-box input[type="file"]::file-selector-button {
+        width: 100%;
+        text-align: center;
+    }
+
+
+    .benana-upload-box .button {
+        width: 100%;
+        text-align: center;
+    }
+}
+.benana-upload-box {
+    background: #ffffff;
+    padding: 26px;
+    border-radius: 16px;
+    border: 1px solid #e6e6e6;
+    margin-top: 20px;
+}
+
+.benana-upload-box h4 {
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: #0A003A;
+}
+
+.benana-upload-box .description {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+
+.upload-area {
+    background: #F7F8FF;
+    border: 2px dashed #d6d9ff;
+    border-radius: 14px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    display: block;
+    transition: 0.2s ease;
+}
+
+.upload-area:hover {
+    background: #f1f3ff;
+    border-color: #b4b8ff;
+	}
+	
+
+
+.benana-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #F7F8FF;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: 1px solid #E3E6FF;
+    margin-bottom: 18px;
+    font-size: 15px;
+    color: #0A003A;
+}
+
+
+.benana-status-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #E9E5FF;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #3A2BA5;
+}
+
+.benana-status-tag .dot {
+    width: 8px;
+    height: 8px;
+    background: #6B5BFF;
+    border-radius: 50%;
+    display: inline-block;
+}
+.benana-alert.warning {
+    background: #FFF4E5;
+    color: #A65A00;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid #FFD8A8;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-top: 12px;
+    font-weight: 500;
+}
+
+.benana-inbox {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid #e2e2e2;
+}
+
+
+.benana-inbox h3 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    color: #0A003A;
+}
+
+
+.benana-filter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.benana-filter input,
+.benana-filter select {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    min-width: 180px;
+}
+
+.benana-filter input:focus,
+.benana-filter select:focus {
+    outline: none;
+    border-color: #0A003A;
+}
+
+
+.benana-filter .button {
+    background: #0A003A;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s ease;
+}
+
+.benana-filter .button:hover {
+    background: #14044F;
+}
+
+
+.benana-card {
+    background: #F7F8FF;
+    border: 1px solid #E3E6FF;
+    padding: 18px 20px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: 0.2s ease;
+}
+
+.benana-card:hover {
+    background: #f0f2ff;
+    border-color: #cfd3ff;
+}
+
+
+.benana-card strong {
+    font-size: 16px;
+    color: #0A003A;
+    display: block;
+    margin-bottom: 8px;
+}
+
+
+.benana-card .meta {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #555;
+}
+
+.benana-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ebe8ff;
+    color: #3A2BA5;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.benana-status-dot {
+    width: 8px;
+    height: 8px;
+    background: #6B5BFF;
+    border-radius: 50%;
+}
+
+
+.benana-status-pill:contains("در انتظار پذیرش") {
+    background: #FFF4E5;
+    color: #A65A00;
+}
+
+.benana-status-pill:contains("فایل ثبت شده") {
+    background: #e1f7ff;
+    color: #007DA6;
+}
+
+.benana-status-pill:contains("تکمیل شده") {
+    background: #e8ffe6;
+    color: #228B22;
+}
+
+
+.benana-eye {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    width: 24px;
+    height: 24px;
+    opacity: 0.6;
+    transition: 0.2s ease;
+}
+
+.benana-eye:hover {
+    opacity: 1;
+}
+
+.benana-eye svg {
+    fill: #3A2BA5;
+    width: 24px;
+    height: 24px;
+}
+
+@media (max-width: 480px) {
+    .benana-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .benana-filter .button {
+        width: 100%;
+    }
+}
+
+.benana-inbox {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+
+@media (max-width: 900px) {
+    .benana-inbox {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .benana-inbox {
+        grid-template-columns: 1fr;
+    }
+}
+
+.benana-card {
+    width: 100%;
+	}
+.benana-inbox > h3 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0A003A;
+    
+
+    text-align: center;
+
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 100%;     
+    margin: 0;          
+    margin-bottom: 20px;
+}
+

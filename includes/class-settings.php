@@ -121,7 +121,8 @@ class Benana_Automation_Settings {
         <p>
             <button type="submit" class="button button-primary">ذخیره تنظیمات</button>
         </p>
-                <h2>تنظیمات Gravity Forms</h2>
+				<div class="benana-gf-settings">
+                <h2 >تنظیمات Gravity Forms</h2>
                 <p>برای هر فرم، شناسه عددی فیلدها یا مرج‌تگ کامل آن‌ها را وارد کنید.</p>
                 <p class="description">شناسه فیلدهایی که می‌خواهید پیش از پذیرش مخفی شوند را با ویرگول وارد کنید؛ پس از پذیرش همه فیلدها نمایش داده می‌شوند. شناسه فیلد آپلود فایل را نیز مشخص نمایید.</p>
                 <table class="form-table" id="benana-gf-table">
@@ -135,8 +136,12 @@ class Benana_Automation_Settings {
                             <th>فیلدهای پیش از پذیرش</th>
                             <th>حذف</th>
                         </tr>
+						
                     </thead>
+					
                     <tbody>
+						
+						
                         <?php
                         $row_index = 0;
                         foreach ( $settings['gravity_forms'] as $form_id => $form_settings ) {
@@ -148,7 +153,7 @@ class Benana_Automation_Settings {
                     </tbody>
                 </table>
                 <button type="button" class="button" id="benana-add-gf">افزودن فرم</button>
-
+				</div>
                 <h2>تنظیمات پیامک</h2>
                 <?php
                 $templates = array(
@@ -176,6 +181,7 @@ class Benana_Automation_Settings {
     }
 
     public function entries_page() {
+
         $status_filter = sanitize_text_field( wp_unslash( $_GET['project_status'] ?? '' ) );
         $paged         = max( 1, absint( $_GET['paged'] ?? 1 ) );
 
@@ -221,31 +227,31 @@ class Benana_Automation_Settings {
                 <?php endforeach; ?>
             </div>
 
-            <div class="benana-charts">
-                <div class="benana-chart-card">
-                    <h3>نمودار وضعیت‌ها</h3>
                     <?php
-                    $max_status = 0;
-                    if ( ! empty( $status_counts['statuses'] ) ) {
-                        $max_status = max( $status_counts['statuses'] );
-                    }
-                    ?>
-                    <div class="benana-bar-chart">
-                        <?php foreach ( $status_map as $status_key => $status_label ) :
-                            $count    = $status_counts['statuses'][ $status_key ] ?? 0;
-                            $percent  = $max_status ? round( ( $count / $max_status ) * 100 ) : 0;
-                            $bar_class = 'status-' . $status_key;
-                            ?>
-                            <div class="benana-bar-row">
-                                <div class="benana-bar-label"><?php echo esc_html( $status_label ); ?></div>
-                                <div class="benana-bar-track">
-                                    <span class="benana-bar-fill <?php echo esc_attr( $bar_class ); ?>" style="width: <?php echo esc_attr( $percent ); ?>%"></span>
-                                    <span class="benana-bar-count"><?php echo esc_html( $count ); ?></span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+$total_for_chart = $status_counts['total'] ?: 1; // از تعداد کل استفاده می‌کنیم
+?>
+			<div class="benana-chart-wrapper">
+<div class="benana-chart-card">
+    <h3>نمودار وضعیت‌ها</h3>
+    <?php
+    $total_for_chart = $status_counts['total'] ?: 1; // از تعداد کل استفاده می‌کنیم
+    ?>
+    <div class="benana-bar-chart">
+        <?php foreach ( $status_map as $status_key => $status_label ) :
+            $count    = $status_counts['statuses'][ $status_key ] ?? 0;
+            $percent  = round( ( $count / $total_for_chart ) * 100 ); // نسبت به کل
+            $bar_class = 'status-' . $status_key;
+            ?>
+            <div class="benana-bar-row">
+                <div class="benana-bar-label"><?php echo esc_html( $status_label ); ?></div>
+                <div class="benana-bar-track">
+                    <span class="benana-bar-fill <?php echo esc_attr( $bar_class ); ?>" style="width: <?php echo esc_attr( $percent ); ?>%"></span>
+                    <span class="benana-bar-count"><?php echo esc_html( $count ); ?></span>
                 </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 
                 <div class="benana-chart-card">
                     <h3>پیشرفت تکمیل</h3>
@@ -310,7 +316,27 @@ class Benana_Automation_Settings {
                             ?>
                             <tr>
                                 <td>#<?php echo esc_html( $project_id ); ?></td>
-                                <td><a href="<?php echo esc_url( get_edit_post_link( $project_id ) ); ?>"><?php the_title(); ?></a></td>
+                                  <td>
+                        <?php 
+                        $gf_entry_id = get_post_meta( $project_id, 'gf_entry_id', true );
+                        $gf_form_id  = get_post_meta( $project_id, 'gf_form_id', true );
+                        
+                        if ( $gf_entry_id && $gf_form_id ) {
+                            $gf_link = add_query_arg(
+                                array(
+                                    'page' => 'gf_entries',
+                                    'view' => 'entry',
+                                    'id'   => $gf_form_id,
+                                    'lid'  => $gf_entry_id,
+                                ),
+                                admin_url( 'admin.php' )
+                            );
+                            echo '<a href="' . esc_url( $gf_link ) . '">مشاهده پروژه</a>';
+                        } else {
+                            echo '—';
+                        }
+                        ?>
+                    </td>
                                 <td class="status status-<?php echo esc_attr( $status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></td>
                                 <td><?php echo esc_html( $province . ' / ' . $city ); ?></td>
                                 <td><?php echo esc_html( get_the_modified_date( 'Y/m/d H:i' ) ); ?></td>
@@ -320,42 +346,35 @@ class Benana_Automation_Settings {
                         wp_reset_postdata();
                     else :
                         ?>
-                        <tr><td colspan="5">موردی یافت نشد.</td></tr>
+                        <tr><td colspan="5">.موردی یافت نشد</td></tr>
                         <?php
                     endif;
                     ?>
                 </tbody>
             </table>
+<form method="get" class="benana-filters">
+    <input type="hidden" name="page" value="benana-automation-projects" />
+    <label for="project_status">فیلتر وضعیت:</label>
+    <select name="project_status" id="project_status">
+        <option value="">همه وضعیت‌ها</option>
+        <?php foreach ( $status_map as $status_key => $status_label ) : ?>
+            <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_filter, $status_key ); ?>>
+                <?php echo esc_html( $status_label ); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <button class="button">اعمال فیلتر</button>
+</form>
 
-            <?php if ( isset( $_GET['benana_entry_delete'] ) ) : ?>
-                <div class="notice notice-info"><p><?php echo esc_html( rawurldecode( wp_unslash( $_GET['benana_entry_delete'] ) ) ); ?></p></div>
-            <?php endif; ?>
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="benana-inline-form">
-                <?php wp_nonce_field( 'benana_delete_entry', 'benana_delete_entry_nonce' ); ?>
-                <input type="hidden" name="action" value="benana_delete_gf_entry" />
-                <label for="gf_entry_id">شناسه ورودی Gravity Forms:</label>
-                <input type="number" name="gf_entry_id" id="gf_entry_id" min="1" required />
-                <button type="submit" class="button button-secondary">حذف ورودی</button>
-            </form>
-            <form method="get" class="benana-filters">
-                <input type="hidden" name="page" value="benana-automation-projects" />
-                <label for="project_status">فیلتر وضعیت:</label>
-                <select name="project_status" id="project_status">
-                    <option value="">همه وضعیت‌ها</option>
-                    <?php foreach ( $status_map as $status_key => $status_label ) : ?>
-                        <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_filter, $status_key ); ?>><?php echo esc_html( $status_label ); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <button class="button">اعمال فیلتر</button>
-            </form>
+<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="benana-delete-entries-form" class="benana-inline-formssss benana-delete-formssss">
+    <?php wp_nonce_field( 'benana_delete_projects', 'benana_delete_projects_nonce' ); ?>
+    <input type="hidden" name="action" value="benana_delete_projects" />
+    <button type="submit" class="button button-secondary" id="benana-delete-selected" disabled>
+        حذف انتخاب‌شده‌ها
+    </button>
+</form>
 
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="benana-delete-entries-form" class="benana-inline-form benana-delete-form">
-                <?php wp_nonce_field( 'benana_delete_projects', 'benana_delete_projects_nonce' ); ?>
-                <input type="hidden" name="action" value="benana_delete_projects" />
-                <button type="submit" class="button button-secondary" id="benana-delete-selected" disabled>حذف انتخاب‌شده‌ها</button>
-            </form>
-
-            <table class="table-banana widefat fixed striped entries">
+            <table class="table-banana widefat fixed striped main-entries">
                 <thead>
                     <tr>
                         <th class="manage-column column-cb check-column"><input type="checkbox" id="benana-select-all" /></th>
@@ -498,7 +517,7 @@ class Benana_Automation_Settings {
             </div>
 
             <h2>آخرین ورودی‌ها</h2>
-            <table class="widefat fixed striped last-entries">
+            <table class="widefat fixed striped last-entriesss">
                 <thead>
                     <tr>
                         <th>شناسه</th>
@@ -545,33 +564,39 @@ class Benana_Automation_Settings {
     }
 
     private function get_status_counts( $status_map ) {
-        $counts = array();
-        foreach ( $status_map as $status_key => $status_label ) {
-            $query = new WP_Query(
-                array(
-                    'post_type'      => 'project',
-                    'posts_per_page' => -1,
-                    'fields'         => 'ids',
-                    'no_found_rows'  => true,
-                    'meta_query'     => array(
-                        array(
-                            'key'   => 'project_status',
-                            'value' => $status_key,
-                        ),
-                    ),
-                )
-            );
-
-            $counts[ $status_key ] = $query->found_posts;
-        }
-
-        $total_query = new WP_Query( array( 'post_type' => 'project', 'posts_per_page' => -1, 'fields' => 'ids', 'no_found_rows' => true ) );
-
-        return array(
-            'total'    => $total_query->found_posts,
-            'statuses' => $counts,
-        );
+    global $wpdb;
+    
+    // روش مستقیم و قابل اطمینان‌تر
+    $counts = array();
+    
+    foreach ( $status_map as $status_key => $status_label ) {
+        $count = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID) 
+             FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+             WHERE p.post_type = 'project'
+             AND p.post_status = 'publish'
+             AND pm.meta_key = 'project_status'
+             AND pm.meta_value = %s",
+            $status_key
+        ) );
+        
+        $counts[ $status_key ] = (int) $count;
     }
+
+    // تعداد کل
+    $total = $wpdb->get_var(
+        "SELECT COUNT(*) 
+         FROM {$wpdb->posts} 
+         WHERE post_type = 'project' 
+         AND post_status = 'publish'"
+    );
+
+    return array(
+        'total'    => (int) $total,
+        'statuses' => $counts,
+    );
+}
 
     private function get_recent_projects( $limit = 10 ) {
         return new WP_Query(
@@ -633,7 +658,6 @@ class Benana_Automation_Settings {
         return array(
             'new'           => 'جدید',
             'accepted'      => 'پذیرفته‌شده',
-            'file_uploaded' => 'فایل بارگذاری‌شده',
             'completed'     => 'تکمیل‌شده',
         );
     }

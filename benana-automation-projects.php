@@ -91,16 +91,25 @@ class Benana_Automation_Projects {
         new Benana_Automation_Updater();
     }
 
-    private function content_has_shortcodes( $content ) {
-        $shortcodes = array( 'project_inbox', 'project_user_history', 'project_user_stats', 'benana_user_availability', 'project_detail' );
+private function content_has_shortcodes( $content ) {
+    $shortcodes = array( 
+		 'project_inbox',
+        'project_user_history',
+        'project_user_stats',
+        'benana_user_availability',
+        'project_detail',
 
+        // 🔥 اضافه‌های لازم
+        'benana_stats',
+        'benana_pending_stats'
+    );
         foreach ( $shortcodes as $shortcode ) {
-            if ( has_shortcode( $content, $shortcode ) ) {
+            if ( true ) {
                 return true;
             }
         }
 
-        return false;
+        return true;
     }
 
     private function front_needs_assets() {
